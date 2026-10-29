@@ -1,0 +1,4 @@
+sample_id,timestamp,shade,deltaE2000,expected_dE,deviation,result,likely_cause,flags
+T1,2026-10-29 10:00:00,Navy,0.24,0.34,-0.11,PASS,random variation,
+T2,2026-10-29 10:05:00,Navy,3.51,2.02,1.48,FAIL,bath below set point,bath below set point = 2.8 (normal 0.0 to 2.3); lighting vs target = 25.0 (normal -7.6 to 17.5)
+T3,2026-10-29 10:10:00,Red,1.19,0.27,0.92,FAIL,random variation,
