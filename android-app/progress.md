@@ -3,6 +3,7 @@
 Update after every completed prompt or task. Newest first.
 
 ## 2026-10-29
+- Updated root `README.md`: architecture, hardware pins, repo layout, quick start, link to `android-app/`.
 - Pushed docs to GitHub branch `android-app` (folder `android-app/`); firmware moved to `lab_dip_esp32/` so Arduino IDE can open it.
 - Added `CLAUDE.md`: stack, architecture, UI, security, testing and workflow rules for every Claude session.
 - Created `LabDipMonitorApp/` with planning docs: `prd.md`, `app-flow.md`, `frontend.md`, `architecture.md`, `database.md`, `security.md`, `readme.md`, `explanation.md` (stub), `progress.md`.
