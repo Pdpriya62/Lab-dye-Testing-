@@ -34,8 +34,9 @@ If a backend is added later, validate every request server-side with the rules i
 
 ## 3. On-device checks
 - **Credentials**: broker password encrypted with an Android Keystore key (Tink / Jetpack Security). Host and username in DataStore. Nothing in `BuildConfig` or `strings.xml`.
-- **Network**: `network_security_config.xml` with `cleartextTrafficPermitted="false"` in release. Plain port 1883 allowed only in the debug build type.
-- **Backups**: `android:allowBackup="false"`, or `dataExtractionRules` that exclude the encrypted prefs.
+- **Network**: `network_security_config.xml` sets `cleartextTrafficPermitted="false"`, but that covers HTTP stacks only, not raw MQTT sockets. `MqttRepository` therefore refuses non-TLS brokers itself when `BuildConfig.DEBUG` is false. Plain port 1883 works only in debug builds.
+- **Parser note**: kotlinx.serialization accepts quoted numbers (`"R":"182"`) even with `isLenient = false`. Range checks still apply, so this is harmless.
+- **Backups**: `android:allowBackup="false"` plus `data_extraction_rules.xml` excluding everything from cloud backup and device transfer (Android 12+ ignores `allowBackup` for device transfer).
 - **Logging**: no payloads or credentials in release logs (debug-only logging tree).
 - **Components**: only `MainActivity` exported. CSV sharing goes through a `FileProvider` with `grantUriPermissions`; no world-readable files.
 - **Permissions**: `INTERNET` and `VIBRATE` only.

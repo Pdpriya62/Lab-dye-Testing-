@@ -2,7 +2,7 @@
 
 Android app that shows live results from the ESP32 textile lab-dip rig: measured colour, ΔE against the target shade with PASS / marginal / FAIL, dye-bath temperature alerts, and ambient conditions. Part of the *Multi-Sensor IoT Framework for Textile Lab-Dip Testing* (Team 11).
 
-> Status: planning. See [progress.md](progress.md).
+> Status: v1 built and installed on a Samsung A26; tested against `tools/fake_rig.py`. See [progress.md](progress.md).
 
 ## How it works
 ```
@@ -18,11 +18,11 @@ The app subscribes to the topic the firmware publishes (`rvu/team11/labdip/data`
 - Local history and CSV export
 
 ## Tech stack
-Kotlin, Jetpack Compose (Material 3), HiveMQ MQTT client, kotlinx.serialization, Room, DataStore, Vico charts. Details in [architecture.md](architecture.md).
+Kotlin, Jetpack Compose (Material 3), HiveMQ MQTT client, kotlinx.serialization, Room, DataStore, Tink, Canvas-drawn charts. Details in [architecture.md](architecture.md).
 
 ## Getting started
-1. Flash `../lab_dip_esp32/lab_dip_esp32.ino` with your Wi-Fi credentials.
-2. Open this folder in Android Studio and let Gradle sync.
+1. Flash `../lab_dip_esp32/lab_dip_esp32.ino` with your Wi-Fi credentials. No rig? Run `python tools/fake_rig.py` from this folder.
+2. Open this `android-app/` folder in Android Studio and let Gradle sync.
 3. Run on a device or emulator with API 26+.
 4. In Settings, enter broker host, port and topic (defaults match the firmware), then tap **Connect**.
 

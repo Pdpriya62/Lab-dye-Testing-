@@ -38,6 +38,8 @@ MQTT, topic `rvu/team11/labdip/data` (configurable), JSON payload every ~3 s:
 | `setpoint_c` | float | bath setpoint °C |
 | `fabric`, `dye` | string, optional | metadata |
 | `dye_conc` | float, optional | % owf |
+| `target_L`, `target_a`, `target_b` | float | target Lab that ΔE is measured against (added 2026-10-29) |
+| `target_set` | bool | false until `TARGET` or `CAPTURE`; until then ΔE is against a 50/0/0 placeholder |
 
 ## 6. Functional requirements
 | ID | Requirement | Priority |
@@ -56,7 +58,7 @@ MQTT, topic `rvu/team11/labdip/data` (configurable), JSON payload every ~3 s:
 ## 7. Non-functional requirements
 - Android 8.0 (API 26)+; target latest stable SDK.
 - Auto-reconnect with backoff; survive screen rotation without dropping the connection.
-- Light and dark theme; text contrast ≥ 4.5:1; PASS/FAIL never conveyed by colour alone.
+- Dark theme only (matches the reference mock-up); text contrast ≥ 4.5:1; PASS/FAIL never conveyed by colour alone.
 - No credentials in source control.
 - Release APK < 15 MB.
 

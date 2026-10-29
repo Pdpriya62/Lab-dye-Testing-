@@ -20,8 +20,10 @@ Room (SQLite) on the device. No server database.
 | `setpoint_c` | REAL | yes | |
 | `fabric`, `dye` | TEXT | yes | |
 | `dye_conc` | REAL | yes | |
+| `target_l`, `target_a`, `target_b` | REAL | yes | firmware target Lab |
+| `target_set` | INTEGER (bool) | no | |
 
-Index: `(sample_id, received_at)`.
+Indexes: `(sample_id, received_at)` for per-sample queries, `(received_at)` for the latest-row query.
 
 ## Samples list query
 ```sql
@@ -57,11 +59,11 @@ interface ReadingDao {
 
 ## Retention
 - Keep all readings by default. At one reading per 3 s for 8 h/day: about 9,600 rows/day, roughly 1–2 MB/day.
-- Setting: auto-delete readings older than N days (default off).
+- Setting: auto-delete readings older than N days (default off). Not built yet.
 
 ## Migrations
 - `exportSchema = true`; schema JSON committed under `app/schemas/`.
 - Every schema change ships a `Migration`. No `fallbackToDestructiveMigration()` in release builds.
 
 ## Export
-CSV columns match `sensor_readings.csv` from the Python project, so `analyze.py` can read exported files.
+CSV columns match `FIELDS` in `logger.py` (same format as `trials_real.csv`). `sensor_readings.csv` is a synthetic bath log with different columns, so it is not the model. `bath_alert` is written as `True`/`False`, as Python's csv module does.

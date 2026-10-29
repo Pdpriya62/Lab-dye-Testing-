@@ -63,6 +63,7 @@ float conc = 0;
 float targetL = 50, targetA = 0, targetB = 0;
 float bathSet = 60.0;
 bool haveBath = false;
+bool haveTarget = false;   // false until CAPTURE or TARGET; deltaE is against the 50/0/0 placeholder until then
 unsigned long lastSample = 0;
 
 struct Reading { float r, g, b, L, a, bb, dE, ambT, hum, press, lux, bath; bool alert; };
@@ -147,6 +148,8 @@ void publishReading() {
   if (!isnan(cur.bath)) d["bath_temp"] = round(cur.bath * 10) / 10.0;
   d["bath_alert"] = cur.alert;
   d["setpoint_c"] = bathSet;
+  d["target_L"] = round(targetL * 100) / 100.0; d["target_a"] = round(targetA * 100) / 100.0; d["target_b"] = round(targetB * 100) / 100.0;
+  d["target_set"] = haveTarget;
   if (fabric.length()) d["fabric"] = fabric;
   if (dye.length()) d["dye"] = dye;
   if (conc > 0) d["dye_conc"] = conc;
@@ -163,8 +166,12 @@ void handleSerial() {
   String cmd = line.substring(0, line.indexOf(' ') < 0 ? line.length() : line.indexOf(' ')); cmd.toUpperCase();
   String arg = line.indexOf(' ') < 0 ? "" : line.substring(line.indexOf(' ') + 1); arg.trim();
   if (cmd == "ID")       { sampleId = arg; Serial.println("OK sample=" + sampleId); }
-  else if (cmd == "CAPTURE") { targetL = cur.L; targetA = cur.a; targetB = cur.bb; Serial.printf("OK target Lab=%.2f %.2f %.2f\n", targetL, targetA, targetB); }
-  else if (cmd == "TARGET")  { sscanf(arg.c_str(), "%f %f %f", &targetL, &targetA, &targetB); Serial.println("OK target set"); }
+  else if (cmd == "CAPTURE") { targetL = cur.L; targetA = cur.a; targetB = cur.bb; haveTarget = true; Serial.printf("OK target Lab=%.2f %.2f %.2f\n", targetL, targetA, targetB); }
+  else if (cmd == "TARGET")  {
+    float L, A, B;
+    if (sscanf(arg.c_str(), "%f %f %f", &L, &A, &B) == 3) { targetL = L; targetA = A; targetB = B; haveTarget = true; Serial.println("OK target set"); }
+    else Serial.println("Usage: TARGET L a b");
+  }
   else if (cmd == "BATH")    { bathSet = arg.toFloat(); haveBath = true; Serial.printf("OK bath=%.1f +/- %.1f\n", bathSet, BATH_TOL); }
   else if (cmd == "FABRIC")  { fabric = arg; Serial.println("OK"); }
   else if (cmd == "DYE")     { dye = arg; Serial.println("OK"); }
@@ -183,6 +190,7 @@ void setup() {
   oled.clearDisplay(); oled.setCursor(0, 0); oled.setTextColor(SSD1306_WHITE); oled.println("Connecting..."); oled.display();
   connectWiFi();
   mqtt.setServer(MQTT_HOST, MQTT_PORT);
+  mqtt.setBufferSize(512);   // default 256 B silently drops full payloads
   Serial.println("Ready. Commands: ID, CAPTURE, TARGET, BATH, FABRIC, DYE, CONC");
 }
 

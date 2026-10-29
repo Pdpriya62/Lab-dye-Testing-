@@ -1,5 +1,18 @@
 # Frontend Design Guidelines
 
+## Visual direction (2026-10-29, supersedes the grey-booth chrome below)
+The team chose a reference mock-up (dark wellness-dashboard style; image kept outside the repo). The app follows it:
+- **Dark only.** Warm near-black backdrop (`Night` #161714 to `Dusk` #22241F) with a soft moss glow (`Moss` #3E4636) behind the top of each screen.
+- **Frosted glass cards**: 28 dp corners, white 8% fill fading to 4%, 1 dp white 10% border. No elevation except the alert banner.
+- **Round glass icon buttons** (48 dp; selected 56 dp with a brighter rim), as in the mock-up's metric row and onboarding cluster.
+- **Type**: screen titles in Instrument Serif italic (38 sp). Everything else in Archivo; numbers in condensed Archivo with tabular figures.
+- **Accent per reading**: bath `Ember` #FF6B2C, ambient `Amber` #F7B634, humidity `Aqua` #3FD4EA, light `Lime` #C5E26A. Status colours stay `Pass` #7CCB95, `Marginal` #E3C15A, `Fail` #F08A8A, always with word + icon.
+- **Live**: hero card with the metric buttons and a half-circle tick gauge (lit up to the value, long ticks at the limits), then the swatch, then 2×2 reading cards and the Lab card.
+- **Trend**: text range tabs ("Last 20 / Last 100 / All") and stacked chart cards (icon, title, range, big value, footer).
+- **Bottom bar**: Live, Trend, Samples, Settings; selected label bold.
+
+**What is kept from the booth idea:** the fabric swatch always sits on a neutral N5 grey surround (`SwatchSurround` #777777, R=G=B), so the dark tinted chrome never touches the colour being judged. The grey-chrome token table below no longer applies. Layout, copy, motion and accessibility rules still do.
+
 ## Subject and primary job
 The app is a pocket version of a **colour-matching viewing booth**. Its one job: tell a dyer at a glance whether this dip matches the target shade, and whether the bath is in range.
 

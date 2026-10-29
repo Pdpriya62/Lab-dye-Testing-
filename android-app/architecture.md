@@ -22,7 +22,7 @@ The app is a pure subscriber. There is no backend of our own.
 | Local DB | Room + KSP | per-sample history, Flow queries |
 | Settings | DataStore (Preferences) | broker config, thresholds, target Lab |
 | Secrets | Android Keystore key (Tink / Jetpack Security) to encrypt broker password | no plaintext credentials |
-| Charts | Vico (`compose-m3`) | Compose-native |
+| Charts | Compose `Canvas` (`ui/components/LineChart.kt`) | the mock-up's chart style needs custom drawing anyway; one less dependency |
 | DI | Manual `AppContainer` | app too small for Hilt |
 | Build | Gradle Kotlin DSL + version catalog; R8 on release | |
 | Tests | JUnit, Turbine (Flow), Compose UI test | |
@@ -33,7 +33,8 @@ The app is a pure subscriber. There is no backend of our own.
 app/src/main/java/com/team11/labdip/
   data/
     mqtt/      MqttRepository      connect, subscribe, reconnect; emits Flow<ByteArray>
-    model/     Reading, ReadingParser   @Serializable model + validation
+    model/     Reading, ReadingParser, Status, ColorMath   model, validation, PASS/FAIL, Lab to sRGB
+    ReadingRepository.kt   ingest (parse, rate limit, drop count) + DAO pass-through
     db/        AppDatabase, ReadingEntity, ReadingDao
     settings/  SettingsRepository  DataStore + encrypted password
   ui/
@@ -41,6 +42,8 @@ app/src/main/java/com/team11/labdip/
     trend/     TrendScreen, TrendViewModel
     samples/   SamplesScreen, SampleDetailScreen, SamplesViewModel
     settings/  SettingsScreen, SettingsViewModel
+    onboarding/ OnboardingScreen   3-page intro, then Connect (Settings in first-run mode)
+    components/ Glass, Gauge, Swatch, LineChart   shared UI pieces
     theme/     Color.kt, Type.kt, Theme.kt   tokens from frontend.md
   AppContainer.kt, LabDipApp.kt, MainActivity.kt
 ```
@@ -63,5 +66,6 @@ Room is the single source of truth. The UI reads from the DB, not straight from 
 ## Key decisions
 - **Direct MQTT, no backend**: zero infrastructure; matches the existing firmware as-is.
 - **DB as source of truth**: state survives rotation and process death; history comes free.
-- **Target swatch**: the payload has no target Lab in v1. The app draws the target only if the user enters target L, a, b in Settings. Proper fix later: firmware publishes `target_L`, `target_a`, `target_b`.
+- **Target swatch**: firmware publishes `target_L/a/b` and `target_set` since 2026-10-29. The app draws the firmware target when `target_set` is true, else the manual target from Settings, else no target half.
+- **Native only**: React/Node was considered on 2026-10-29 and dropped; the app stays Kotlin.
 - **Status thresholds in the app**: the firmware sends ΔE only; PASS / marginal / FAIL is decided on the phone with configurable limits.

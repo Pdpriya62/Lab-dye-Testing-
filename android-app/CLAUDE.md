@@ -1,6 +1,6 @@
 # LabDip Monitor: Claude instructions
 
-Android app that subscribes to the ESP32 lab-dip rig over MQTT and shows colour, ΔE, PASS/FAIL, bath temperature and ambient readings. Firmware lives in `../`.
+Android app that subscribes to the ESP32 lab-dip rig over MQTT and shows colour, ΔE, PASS/FAIL, bath temperature and ambient readings. Firmware lives in `../lab_dip_esp32/`. This folder is the Gradle project (`app/`) and holds these docs.
 
 ## Read first
 `prd.md` (requirements), `architecture.md` (stack, packages), `frontend.md` (UI tokens), `security.md` (validation rules), `database.md` (schema), `progress.md` (current state). If code and docs disagree, ask before changing either.
@@ -11,9 +11,10 @@ Android app that subscribes to the ESP32 lab-dip rig over MQTT and shows colour,
 - MVVM: ViewModel + `StateFlow` + coroutines; manual DI via `AppContainer` (no Hilt)
 - MQTT: `com.hivemq:hivemq-mqtt-client` (never Paho Android Service)
 - JSON: `kotlinx.serialization` (no Gson/Moshi)
-- Room + KSP (no kapt); DataStore Preferences; Vico charts
+- Room + KSP (no kapt); DataStore Preferences; Tink; charts drawn on Compose `Canvas` (no chart library)
 - Gradle Kotlin DSL + `gradle/libs.versions.toml`; add every dependency through the version catalog
 - Package: `com.team11.labdip`, single `app` module
+- Build with JDK 17+ (Android Studio's bundled JBR works); AGP 8.13 rejects JDK 11
 
 ## Architecture rules
 - Data flow: MQTT bytes -> `ReadingParser` -> Room -> ViewModel -> Compose. UI never reads MQTT directly; Room is the single source of truth.
@@ -22,11 +23,11 @@ Android app that subscribes to the ESP32 lab-dip rig over MQTT and shows colour,
 - No new dependency without a one-line reason in `architecture.md`.
 
 ## UI rules (from `frontend.md`)
-- Colours only from `ui/theme` tokens; chrome is pure grey (R=G=B). Dynamic colour off.
-- Font: Archivo; tabular figures for every number; units next to values.
+- Colours only from `ui/theme` tokens; dark glass style from the reference mock-up; the swatch always sits on the neutral `SwatchSurround` grey. Dynamic colour off.
+- Fonts: Archivo (UI, numbers) and Instrument Serif italic (screen titles); tabular figures for every number; units next to values.
 - Sentence case; no all-caps labels.
 - Status always word + icon, never colour alone. Touch targets ≥ 48 dp. Content descriptions on swatch and icons.
-- Every screen ships a `@Preview` for light and dark.
+- Every screen ships a `@Preview` (dark only; the app has no light theme).
 
 ## Security rules (from `security.md`)
 - Treat every MQTT payload as untrusted: size cap, strict decode, range checks, string whitelist. Bad message = drop + count, never crash.
