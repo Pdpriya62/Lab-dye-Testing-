@@ -5,17 +5,22 @@
 2. **Trend**
 3. **Samples** (history list), then **Sample detail**
 4. **Settings** (broker + thresholds)
+5. **Rig controls** (from the Live header button): send ID, CAPTURE, TARGET, BATH, FABRIC, DYE, CONC; see the rig's replies
 
-Bottom navigation: Live, Trend, Samples. Settings opens from the gear icon in the top bar.
+Bottom navigation: Live, Trend, Samples, Settings. Every launch shows a 5-slide feature intro (swipe or Next; Skip). First launch then goes to Connect, later launches to Live.
 
 ## First launch
 ```
 Launch
   broker settings saved?
-    no  -> Settings (prefilled: broker.hivemq.com, 1883, rvu/team11/labdip/data)
+    no  -> Onboarding -> Connect (Settings, prefilled: broker.hivemq.com, 1883, rvu/team11/labdip/data)
              tap "Connect" -> Live
     yes -> Live (auto-connect)
 ```
+
+## Live screen
+- Hero gauge card: five round metric buttons (ΔE, bath, ambient, humidity, light) switch what the tick gauge shows. Tapping a reading card below does the same.
+- Split swatch (target | measured) on neutral grey, then reading cards and the Lab card.
 
 ## Live screen states
 ```
@@ -30,8 +35,8 @@ Reconnecting (last reading greyed,  <----------+ connection lost
 - **New sample ID arrives**: Live switches to it; Trend resets to that sample.
 
 ## Trend
-- Two stacked charts: ΔE (with threshold lines) and bath temperature (with setpoint ± tolerance band).
-- Range chips: last 20 / last 100 / all readings for this sample.
+- Stacked chart cards: ΔE (threshold lines, FAIL dots), bath temperature (setpoint ± tolerance band), ambient, humidity, light (normal band). Tap or drag a chart to read a point.
+- Range tabs: last 20 / last 100 / all readings for this sample.
 
 ## Samples
 - List rows: sample ID, fabric/dye, last ΔE, status, time.

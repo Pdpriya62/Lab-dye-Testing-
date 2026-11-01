@@ -14,7 +14,6 @@ Lab-dip testing compares a dyed fabric sample against a target shade. The ESP32 
 - Keep a local history per sample ID.
 
 ## 4. Non-goals (v1)
-- Sending commands to the ESP32 (ID, CAPTURE, TARGET, BATH). Done over serial for now.
 - Cloud backend, user accounts, multi-device sync.
 - Running the Python ML model (`compare_live.py`) on the phone.
 - Background alerts while the app is closed.
@@ -38,6 +37,8 @@ MQTT, topic `rvu/team11/labdip/data` (configurable), JSON payload every ~3 s:
 | `setpoint_c` | float | bath setpoint °C |
 | `fabric`, `dye` | string, optional | metadata |
 | `dye_conc` | float, optional | % owf |
+| `target_L`, `target_a`, `target_b` | float | target Lab that ΔE is measured against (added 2026-10-29) |
+| `target_set` | bool | false until `TARGET` or `CAPTURE`; until then ΔE is against a 50/0/0 placeholder |
 
 ## 6. Functional requirements
 | ID | Requirement | Priority |
@@ -52,11 +53,12 @@ MQTT, topic `rvu/team11/labdip/data` (configurable), JSON payload every ~3 s:
 | F8 | Export a sample's readings as CSV (same columns as `sensor_readings.csv`). | Could |
 | F9 | Connection status always visible: connected / reconnecting / offline, plus "last reading N s ago". | Must |
 | F10 | Reject and count malformed messages; never crash on bad input. | Must |
+| F11 | Send the serial commands (ID, CAPTURE, TARGET, BATH, FABRIC, DYE, CONC) from the app over MQTT on the same broker, and show the rig's OK / ERR reply. Added 2026-11-01. | Should |
 
 ## 7. Non-functional requirements
 - Android 8.0 (API 26)+; target latest stable SDK.
 - Auto-reconnect with backoff; survive screen rotation without dropping the connection.
-- Light and dark theme; text contrast ≥ 4.5:1; PASS/FAIL never conveyed by colour alone.
+- Dark theme only (matches the reference mock-up); text contrast ≥ 4.5:1; PASS/FAIL never conveyed by colour alone.
 - No credentials in source control.
 - Release APK < 15 MB.
 

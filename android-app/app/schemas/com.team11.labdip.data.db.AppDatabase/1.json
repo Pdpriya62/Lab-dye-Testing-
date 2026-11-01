@@ -1,0 +1,192 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "47cafa6173ed08cbfc78e0fbf94a6c5c",
+    "entities": [
+      {
+        "tableName": "readings",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `sample_id` TEXT NOT NULL, `device_time` TEXT NOT NULL, `received_at` INTEGER NOT NULL, `delta_e` REAL NOT NULL, `r` INTEGER NOT NULL, `g` INTEGER NOT NULL, `b` INTEGER NOT NULL, `lab_l` REAL NOT NULL, `lab_a` REAL NOT NULL, `lab_b` REAL NOT NULL, `ambient_temp` REAL, `humidity` REAL, `light_lux` INTEGER, `bath_temp` REAL, `bath_alert` INTEGER NOT NULL, `setpoint_c` REAL, `target_l` REAL, `target_a` REAL, `target_b` REAL, `target_set` INTEGER NOT NULL, `fabric` TEXT, `dye` TEXT, `dye_conc` REAL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sampleId",
+            "columnName": "sample_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deviceTime",
+            "columnName": "device_time",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "receivedAt",
+            "columnName": "received_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deltaE",
+            "columnName": "delta_e",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "r",
+            "columnName": "r",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "g",
+            "columnName": "g",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "b",
+            "columnName": "b",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "labL",
+            "columnName": "lab_l",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "labA",
+            "columnName": "lab_a",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "labB",
+            "columnName": "lab_b",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ambientTemp",
+            "columnName": "ambient_temp",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "humidity",
+            "columnName": "humidity",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "lightLux",
+            "columnName": "light_lux",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "bathTemp",
+            "columnName": "bath_temp",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "bathAlert",
+            "columnName": "bath_alert",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "setpointC",
+            "columnName": "setpoint_c",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "targetL",
+            "columnName": "target_l",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "targetA",
+            "columnName": "target_a",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "targetB",
+            "columnName": "target_b",
+            "affinity": "REAL",
+            "notNull": false
+          },
+          {
+            "fieldPath": "targetSet",
+            "columnName": "target_set",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fabric",
+            "columnName": "fabric",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "dye",
+            "columnName": "dye",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "dyeConc",
+            "columnName": "dye_conc",
+            "affinity": "REAL",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_readings_sample_id_received_at",
+            "unique": false,
+            "columnNames": [
+              "sample_id",
+              "received_at"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_readings_sample_id_received_at` ON `${TABLE_NAME}` (`sample_id`, `received_at`)"
+          },
+          {
+            "name": "index_readings_received_at",
+            "unique": false,
+            "columnNames": [
+              "received_at"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_readings_received_at` ON `${TABLE_NAME}` (`received_at`)"
+          }
+        ],
+        "foreignKeys": []
+      }
+    ],
+    "views": [],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '47cafa6173ed08cbfc78e0fbf94a6c5c')"
+    ]
+  }
+}

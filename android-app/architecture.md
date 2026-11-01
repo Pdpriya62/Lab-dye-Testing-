@@ -22,7 +22,7 @@ The app is a pure subscriber. There is no backend of our own.
 | Local DB | Room + KSP | per-sample history, Flow queries |
 | Settings | DataStore (Preferences) | broker config, thresholds, target Lab |
 | Secrets | Android Keystore key (Tink / Jetpack Security) to encrypt broker password | no plaintext credentials |
-| Charts | Vico (`compose-m3`) | Compose-native |
+| Charts | Compose `Canvas` (`ui/components/LineChart.kt`) | the mock-up's chart style needs custom drawing anyway; one less dependency |
 | DI | Manual `AppContainer` | app too small for Hilt |
 | Build | Gradle Kotlin DSL + version catalog; R8 on release | |
 | Tests | JUnit, Turbine (Flow), Compose UI test | |
@@ -32,8 +32,10 @@ The app is a pure subscriber. There is no backend of our own.
 ```
 app/src/main/java/com/team11/labdip/
   data/
-    mqtt/      MqttRepository      connect, subscribe, reconnect; emits Flow<ByteArray>
-    model/     Reading, ReadingParser   @Serializable model + validation
+    mqtt/      MqttRepository      connect, subscribe, reconnect; emits Flow<ByteArray>; send(command), replies
+               RigCommands         builds and checks commands; cmd/ack topics next to the data topic
+    model/     Reading, ReadingParser, Status, ColorMath   model, validation, PASS/FAIL, Lab to sRGB
+    ReadingRepository.kt   ingest (parse, rate limit, drop count) + DAO pass-through
     db/        AppDatabase, ReadingEntity, ReadingDao
     settings/  SettingsRepository  DataStore + encrypted password
   ui/
@@ -41,6 +43,9 @@ app/src/main/java/com/team11/labdip/
     trend/     TrendScreen, TrendViewModel
     samples/   SamplesScreen, SampleDetailScreen, SamplesViewModel
     settings/  SettingsScreen, SettingsViewModel
+    controls/  ControlsScreen, ControlsViewModel   rig commands + reply log, opened from Live
+    onboarding/ OnboardingScreen   5-slide feature intro on every launch; first run then goes to Connect
+    components/ Glass, Fields, Gauge, Swatch, LineChart   shared UI pieces
     theme/     Color.kt, Type.kt, Theme.kt   tokens from frontend.md
   AppContainer.kt, LabDipApp.kt, MainActivity.kt
 ```
@@ -54,6 +59,13 @@ MQTT message bytes
 ```
 Room is the single source of truth. The UI reads from the DB, not straight from MQTT. The Live screen shows the latest row.
 
+Commands (2026-11-01) go the other way and are not stored:
+```
+ControlsViewModel -> RigCommands (validate) -> MqttRepository.send() -> rvu/team11/labdip/cmd -> ESP32 runCommand()
+ESP32 reply "OK ..."/"ERR ..." -> rvu/team11/labdip/ack -> RigCommands.cleanReply -> MqttRepository.replies -> reply log
+```
+The Serial Monitor keeps working; the firmware prints app commands there as `MQTT> ... -> reply`.
+
 ## Connection lifecycle
 - `AppContainer` (application scope) owns `MqttRepository`.
 - Connects when the app comes to foreground (`ProcessLifecycleOwner`); disconnects in background.
@@ -62,6 +74,10 @@ Room is the single source of truth. The UI reads from the DB, not straight from 
 
 ## Key decisions
 - **Direct MQTT, no backend**: zero infrastructure; matches the existing firmware as-is.
+- **Commands on the same broker** (2026-11-01): ESP32, app and Serial Monitor share `broker.hivemq.com`; command and reply topics sit next to the data topic. Public broker means anyone can send commands, accepted for the demo (see `security.md`).
+- **Rig presence** (2026-11-01): firmware MQTT last will publishes retained `offline` on `.../status`; it publishes retained `online` after connecting. The app combines that with reading age (`rigLink()`): offline, quiet (online but no data) or online.
+- **IPv4 first**: `broker.hivemq.com`'s IPv6 address refused port 1883 on the lab Wi-Fi, so `MqttRepository` connects to the IPv4 address.
 - **DB as source of truth**: state survives rotation and process death; history comes free.
-- **Target swatch**: the payload has no target Lab in v1. The app draws the target only if the user enters target L, a, b in Settings. Proper fix later: firmware publishes `target_L`, `target_a`, `target_b`.
+- **Target swatch**: firmware publishes `target_L/a/b` and `target_set` since 2026-10-29. The app draws the firmware target when `target_set` is true, else the manual target from Settings, else no target half.
+- **Native only**: React/Node was considered on 2026-10-29 and dropped; the app stays Kotlin.
 - **Status thresholds in the app**: the firmware sends ΔE only; PASS / marginal / FAIL is decided on the phone with configurable limits.

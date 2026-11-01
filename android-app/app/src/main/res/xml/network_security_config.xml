@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Covers HTTP stacks only. Raw MQTT sockets ignore this file, so MqttRepository refuses plain TCP in release builds itself. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+</network-security-config>
