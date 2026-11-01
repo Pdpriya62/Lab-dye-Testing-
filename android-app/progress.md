@@ -2,6 +2,10 @@
 
 Update after every completed prompt or task. Newest first.
 
+## 2026-10-30
+- Removed Android Studio "new project" template leftovers: `com.example.myapplication` sources and tests, `backup_rules.xml`, `Theme.MyApplication` (light theme had overridden `Theme.LabDip` on `MainActivity`) and a duplicate `include(":app")`.
+- Build note: default `JAVA_HOME` is Zulu JDK 11; run Gradle with Android Studio's `jbr` (JDK 17+).
+
 ## 2026-10-29 (build)
 - Built the app in this folder: `com.team11.labdip`, minSdk 26, full stack in `libs.versions.toml`, R8 + resource shrinking on release.
 - Data: `ReadingParser` (size cap, strict decode, range checks, text whitelist), Room (`readings`, schema exported to `app/schemas/`), `ReadingRepository` (10 msg/s cap, drop counter), `MqttRepository` (HiveMQ, MQTT 3.1.1, auto-reconnect 1–30 s, TLS required in release), `SettingsRepository` (DataStore + Tink/Keystore-encrypted password).
