@@ -11,7 +11,10 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.team11.labdip.LabDipApp
 import com.team11.labdip.data.ReadingRepository
 import com.team11.labdip.data.db.ReadingEntity
+import com.team11.labdip.data.model.RIG_STALE_MS
+import com.team11.labdip.data.model.RigLink
 import com.team11.labdip.data.model.Status
+import com.team11.labdip.data.model.rigLink
 import com.team11.labdip.data.model.labToRgb
 import com.team11.labdip.data.model.statusFor
 import com.team11.labdip.data.mqtt.ConnectionState
@@ -40,6 +43,7 @@ data class LiveUiState(
     val metric: Metric = Metric.DeltaE,
     val dropped: Int = 0,
     val now: Long = System.currentTimeMillis(),
+    val rigOnline: Boolean? = null,
 ) {
     val status: Status? get() = reading?.let { statusFor(it.deltaE, settings.passMax, settings.marginalMax) }
 
@@ -57,11 +61,12 @@ data class LiveUiState(
     }
 
     val ageMs: Long get() = reading?.let { now - it.receivedAt } ?: 0
-    val stale: Boolean get() = connection !is ConnectionState.Connected || ageMs > STALE_MS
+    val rig: RigLink get() = rigLink(rigOnline, reading?.let { now - it.receivedAt })
+    val stale: Boolean get() = connection !is ConnectionState.Connected || rig != RigLink.Online
     val bathAlert: Boolean get() = reading?.bathAlert == true && ageMs < STALE_MS
 
     companion object {
-        const val STALE_MS = 10_000L
+        const val STALE_MS = RIG_STALE_MS
     }
 }
 
@@ -75,9 +80,10 @@ class LiveViewModel(
     private val ticker = flow { while (true) { emit(System.currentTimeMillis()); delay(1_000) } }
 
     val state: StateFlow<LiveUiState> = combine(
-        mqtt.state, readings.latest(), settings.settings, metric, combine(readings.dropped, ticker) { d, t -> d to t },
-    ) { conn, reading, s, m, (dropped, now) ->
-        LiveUiState(conn, reading, s, m, dropped, now)
+        combine(mqtt.state, mqtt.rigOnline) { c, r -> c to r }, readings.latest(), settings.settings, metric,
+        combine(readings.dropped, ticker) { d, t -> d to t },
+    ) { (conn, rigOnline), reading, s, m, (dropped, now) ->
+        LiveUiState(conn, reading, s, m, dropped, now, rigOnline)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LiveUiState())
 
     init {

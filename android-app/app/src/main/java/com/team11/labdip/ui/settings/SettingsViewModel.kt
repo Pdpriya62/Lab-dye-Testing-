@@ -63,6 +63,8 @@ fun SettingsForm.validate(): Pair<AppSettings?, Map<Field, String>> {
     if (p == null || p !in 1..65535) e[Field.Port] = "Port must be 1 to 65535"
     val t = topic.trim()
     if (t.isEmpty() || t.length > 200) e[Field.Topic] = "Enter the topic the rig publishes on"
+    // Commands go to a topic derived from this one, and MQTT can't publish to a wildcard
+    else if (t.any { it == '+' || it == '#' }) e[Field.Topic] = "Use the exact topic, without + or #"
     fun num(f: Field, s: String, min: Double, max: Double): Double? {
         val v = s.trim().toDoubleOrNull()
         if (v == null || !v.isFinite() || v < min || v > max) { e[f] = "Enter a number from ${min.clean()} to ${max.clean()}"; return null }

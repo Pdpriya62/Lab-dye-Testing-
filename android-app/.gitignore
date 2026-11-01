@@ -17,3 +17,8 @@ local.properties
 /.idea
 /app/build
 __pycache__/
+
+# Release signing: never commit
+keystore.properties
+*.jks
+*.keystore

@@ -44,7 +44,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.team11.labdip.ui.components.GlassCard
+import com.team11.labdip.ui.components.LabField
 import com.team11.labdip.ui.components.PillButton
+import com.team11.labdip.ui.components.labFieldColors
 import com.team11.labdip.ui.theme.Backdrop
 import com.team11.labdip.ui.theme.Fail
 import com.team11.labdip.ui.theme.GlassEdge
@@ -86,9 +88,9 @@ fun SettingsScreen(
             if (!state.loaded) return@Column
 
             Section("Broker") {
-                Field("Host", f.host, e[Field.Host]) { v -> onEdit { it.copy(host = v) } }
+                LabField("Host", f.host, e[Field.Host]) { v -> onEdit { it.copy(host = v) } }
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Field("Port", f.port, e[Field.Port], KeyboardType.Number, Modifier.weight(1f)) { v -> onEdit { it.copy(port = v) } }
+                    LabField("Port", f.port, e[Field.Port], KeyboardType.Number, Modifier.weight(1f)) { v -> onEdit { it.copy(port = v) } }
                     Spacer(Modifier.padding(6.dp))
                     Text("TLS", style = LabType.body, color = Ink)
                     Spacer(Modifier.padding(4.dp))
@@ -99,34 +101,34 @@ fun SettingsScreen(
                     )
                 }
                 if (!f.tls) Text("Without TLS anyone on the broker can read readings. Fine for demos only.", style = LabType.small, color = InkSoft)
-                Field("Username (optional)", f.username, null) { v -> onEdit { it.copy(username = v) } }
+                LabField("Username (optional)", f.username, null) { v -> onEdit { it.copy(username = v) } }
                 PasswordField(f.password) { v -> onEdit { it.copy(password = v) } }
-                Field("Topic", f.topic, e[Field.Topic]) { v -> onEdit { it.copy(topic = v) } }
+                LabField("Topic", f.topic, e[Field.Topic]) { v -> onEdit { it.copy(topic = v) } }
             }
 
             Section("Pass / fail limits") {
                 Row {
-                    Field("Pass at ΔE ≤", f.passMax, e[Field.PassMax], KeyboardType.Decimal, Modifier.weight(1f)) { v -> onEdit { it.copy(passMax = v) } }
+                    LabField("Pass at ΔE ≤", f.passMax, e[Field.PassMax], KeyboardType.Decimal, Modifier.weight(1f)) { v -> onEdit { it.copy(passMax = v) } }
                     Spacer(Modifier.padding(6.dp))
-                    Field("Marginal up to", f.marginalMax, e[Field.MarginalMax], KeyboardType.Decimal, Modifier.weight(1f)) { v -> onEdit { it.copy(marginalMax = v) } }
+                    LabField("Marginal up to", f.marginalMax, e[Field.MarginalMax], KeyboardType.Decimal, Modifier.weight(1f)) { v -> onEdit { it.copy(marginalMax = v) } }
                 }
                 Text("Above the marginal limit is a fail.", style = LabType.small, color = InkSoft)
-                Field("Bath tolerance ± °C", f.bathTolerance, e[Field.BathTol], KeyboardType.Decimal) { v -> onEdit { it.copy(bathTolerance = v) } }
+                LabField("Bath tolerance ± °C", f.bathTolerance, e[Field.BathTol], KeyboardType.Decimal) { v -> onEdit { it.copy(bathTolerance = v) } }
                 Row {
-                    Field("Light min lx", f.luxMin, e[Field.LuxMin], KeyboardType.Number, Modifier.weight(1f)) { v -> onEdit { it.copy(luxMin = v) } }
+                    LabField("Light min lx", f.luxMin, e[Field.LuxMin], KeyboardType.Number, Modifier.weight(1f)) { v -> onEdit { it.copy(luxMin = v) } }
                     Spacer(Modifier.padding(6.dp))
-                    Field("Light max lx", f.luxMax, e[Field.LuxMax], KeyboardType.Number, Modifier.weight(1f)) { v -> onEdit { it.copy(luxMax = v) } }
+                    LabField("Light max lx", f.luxMax, e[Field.LuxMax], KeyboardType.Number, Modifier.weight(1f)) { v -> onEdit { it.copy(luxMax = v) } }
                 }
             }
 
             Section("Target shade (optional)") {
                 Text("Used only when the rig has no target set. Same values as the TARGET serial command.", style = LabType.small, color = InkSoft)
                 Row {
-                    Field("L", f.targetL, null, KeyboardType.Decimal, Modifier.weight(1f), signed = true) { v -> onEdit { it.copy(targetL = v) } }
+                    LabField("L", f.targetL, null, KeyboardType.Decimal, Modifier.weight(1f), signed = true) { v -> onEdit { it.copy(targetL = v) } }
                     Spacer(Modifier.padding(4.dp))
-                    Field("a", f.targetA, null, KeyboardType.Decimal, Modifier.weight(1f), signed = true) { v -> onEdit { it.copy(targetA = v) } }
+                    LabField("a", f.targetA, null, KeyboardType.Decimal, Modifier.weight(1f), signed = true) { v -> onEdit { it.copy(targetA = v) } }
                     Spacer(Modifier.padding(4.dp))
-                    Field("b", f.targetB, null, KeyboardType.Decimal, Modifier.weight(1f), signed = true) { v -> onEdit { it.copy(targetB = v) } }
+                    LabField("b", f.targetB, null, KeyboardType.Decimal, Modifier.weight(1f), signed = true) { v -> onEdit { it.copy(targetB = v) } }
                 }
                 e[Field.Target]?.let { Text(it, style = LabType.small, color = Fail) }
             }
@@ -154,46 +156,6 @@ private fun Section(title: String, content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun fieldColors() = OutlinedTextFieldDefaults.colors(
-    focusedBorderColor = Ink,
-    unfocusedBorderColor = GlassEdge.copy(alpha = 0.3f),
-    focusedLabelColor = Ink,
-    unfocusedLabelColor = InkSoft,
-    cursorColor = Ink,
-    focusedTextColor = Ink,
-    unfocusedTextColor = Ink,
-    errorBorderColor = Fail,
-    errorLabelColor = Fail,
-    errorSupportingTextColor = Fail,
-)
-
-@Composable
-private fun Field(
-    label: String,
-    value: String,
-    error: String?,
-    keyboard: KeyboardType = KeyboardType.Text,
-    modifier: Modifier = Modifier.fillMaxWidth(),
-    signed: Boolean = false,
-    onChange: (String) -> Unit,
-) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onChange,
-        label = { Text(label) },
-        singleLine = true,
-        isError = error != null,
-        supportingText = error?.let { { Text(it) } },
-        // Decimal keypads on some phones have no minus key, so signed fields use the full keyboard
-        keyboardOptions = KeyboardOptions(keyboardType = if (signed) KeyboardType.Text else keyboard),
-        shape = RoundedCornerShape(16.dp),
-        textStyle = LabType.body,
-        colors = fieldColors(),
-        modifier = modifier,
-    )
-}
-
-@Composable
 private fun PasswordField(value: String, onChange: (String) -> Unit) {
     var show by rememberSaveable { mutableStateOf(false) }
     OutlinedTextField(
@@ -210,7 +172,7 @@ private fun PasswordField(value: String, onChange: (String) -> Unit) {
         },
         shape = RoundedCornerShape(16.dp),
         textStyle = LabType.body,
-        colors = fieldColors(),
+        colors = labFieldColors(),
         modifier = Modifier.fillMaxWidth(),
     )
 }

@@ -30,7 +30,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -38,6 +37,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.team11.labdip.ui.controls.ControlsRoute
 import com.team11.labdip.ui.live.LiveRoute
 import com.team11.labdip.ui.onboarding.OnboardingScreen
 import com.team11.labdip.ui.samples.SampleDetailRoute
@@ -47,6 +47,7 @@ import com.team11.labdip.ui.theme.Ink
 import com.team11.labdip.ui.theme.InkSoft
 import com.team11.labdip.ui.theme.LabDipTheme
 import com.team11.labdip.ui.theme.LabType
+import com.team11.labdip.ui.theme.NavSurface
 import com.team11.labdip.ui.theme.Night
 import com.team11.labdip.ui.trend.TrendRoute
 import kotlinx.coroutines.flow.map
@@ -61,7 +62,7 @@ class MainActivity : ComponentActivity() {
                 val onboarded by remember { container.settings.settings.map { it.onboarded } }.collectAsState(initial = null)
                 when (val o = onboarded) {
                     null -> Box(Modifier.fillMaxSize().background(Night))
-                    else -> LabDipNav(startOnboarding = !o)
+                    else -> LabDipNav(onboarded = o)
                 }
             }
         }
@@ -76,6 +77,7 @@ private object Routes {
     const val SAMPLES = "samples"
     const val SAMPLE = "sample/{id}"
     const val SETTINGS = "settings"
+    const val CONTROLS = "controls"
 }
 
 private data class Tab(val route: String, val label: String, val icon: ImageVector)
@@ -88,10 +90,11 @@ private val tabs = listOf(
 )
 
 @Composable
-private fun LabDipNav(startOnboarding: Boolean) {
+private fun LabDipNav(onboarded: Boolean) {
     val nav = rememberNavController()
-    // Fixed at first composition: finishing onboarding flips the flag but must not rebuild the graph
-    val start = remember { if (startOnboarding) Routes.ONBOARDING else Routes.LIVE }
+    // Feature intro plays on every launch; first run then goes to Connect, later runs straight to Live.
+    // Fixed at first composition: finishing setup flips the flag but must not rebuild the graph
+    val returning = remember { onboarded }
     val snackbar = remember { SnackbarHostState() }
     val entry by nav.currentBackStackEntryAsState()
     val route = entry?.destination?.route
@@ -102,16 +105,24 @@ private fun LabDipNav(startOnboarding: Boolean) {
     ) { pad ->
         NavHost(
             nav,
-            startDestination = start,
+            startDestination = Routes.ONBOARDING,
             modifier = Modifier.padding(bottom = pad.calculateBottomPadding()),
         ) {
-            composable(Routes.ONBOARDING) { OnboardingScreen(onFinish = { nav.navigate(Routes.CONNECT) }) }
+            composable(Routes.ONBOARDING) {
+                OnboardingScreen(onFinish = {
+                    if (returning) nav.navigate(Routes.LIVE) { popUpTo(Routes.ONBOARDING) { inclusive = true } }
+                    else nav.navigate(Routes.CONNECT)
+                })
+            }
             composable(Routes.CONNECT) {
                 SettingsRoute(firstRun = true, onDone = {
                     nav.navigate(Routes.LIVE) { popUpTo(0) { inclusive = true } }
                 })
             }
-            composable(Routes.LIVE) { LiveRoute(onOpenSettings = { nav.switchTab(Routes.SETTINGS) }) }
+            composable(Routes.LIVE) {
+                LiveRoute(onOpenSettings = { nav.switchTab(Routes.SETTINGS) }, onOpenControls = { nav.navigate(Routes.CONTROLS) })
+            }
+            composable(Routes.CONTROLS) { ControlsRoute(onBack = { nav.popBackStack() }) }
             composable(Routes.TREND) { TrendRoute() }
             composable(Routes.SAMPLES) { SamplesRoute(snackbar, onOpen = { nav.navigate("sample/$it") }) }
             composable(Routes.SAMPLE, arguments = listOf(navArgument("id") { type = NavType.StringType })) {
@@ -123,14 +134,15 @@ private fun LabDipNav(startOnboarding: Boolean) {
 }
 
 private fun NavHostController.switchTab(route: String) = navigate(route) {
-    popUpTo(graph.findStartDestination().id) { saveState = true }
+    // Live is always the back-stack root once the intro is gone
+    popUpTo(Routes.LIVE) { saveState = true }
     launchSingleTop = true
     restoreState = true
 }
 
 @Composable
 private fun BottomBar(nav: NavHostController, current: String?) {
-    NavigationBar(containerColor = Color(0xFF1C1D1A), tonalElevation = 0.dp) {
+    NavigationBar(containerColor = NavSurface, tonalElevation = 0.dp) {
         for (t in tabs) {
             val sel = t.route == current
             NavigationBarItem(

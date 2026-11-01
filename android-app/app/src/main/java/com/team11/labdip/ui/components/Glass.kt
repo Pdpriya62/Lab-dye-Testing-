@@ -38,6 +38,7 @@ import com.team11.labdip.ui.theme.Fail
 import com.team11.labdip.ui.theme.Glass
 import com.team11.labdip.ui.theme.GlassEdge
 import com.team11.labdip.ui.theme.GlassStrong
+import com.team11.labdip.ui.theme.GlassViolet
 import com.team11.labdip.ui.theme.Ink
 import com.team11.labdip.ui.theme.LabType
 import com.team11.labdip.ui.theme.Marginal
@@ -56,7 +57,7 @@ fun GlassCard(
     Column(
         modifier
             .clip(CardShape)
-            .background(Brush.verticalGradient(listOf(Glass, Color(0x0AFFFFFF))))
+            .background(Brush.verticalGradient(listOf(Glass, GlassViolet)))
             .border(1.dp, GlassEdge, CardShape)
             .let { if (onClick != null) it.clickable(onClick = onClick) else it }
             .padding(padding),
@@ -99,8 +100,8 @@ fun PillButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier,
         enabled = enabled,
         modifier = modifier.defaultMinSize(minHeight = 56.dp),
         shape = CircleShape,
-        border = BorderStroke(1.dp, Color(0x40FFFFFF)),
-        colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(containerColor = Glass, contentColor = Ink),
+        border = BorderStroke(1.dp, Color(0x55D9C6FF)),
+        colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(containerColor = GlassViolet, contentColor = Ink),
     ) { Text(text, style = LabType.body) }
 }
 

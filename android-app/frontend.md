@@ -1,6 +1,12 @@
 # Frontend Design Guidelines
 
-## Visual direction (2026-10-29, supersedes the grey-booth chrome below)
+## Visual direction (2026-11-01, supersedes the moss palette and the grey-booth chrome below)
+- **Violet glass**, from the reference mock-up `original-45e9928e108b001110bff9260d116afe.webp`: backdrop `Dusk` #1A1236 to `Night` #0D0920, `Orchid` #D58CFF spotlight top right, drifting `Violet` #8B5CF6 and `Indigo` #3B2A8C dye blobs, and a faint rippling woven-thread texture (all in `Backdrop`, drawn on `Canvas`).
+- Cards fade from `Glass` (white 8%) to `GlassViolet` (#7C52E0 at 33%), border `GlassEdge`. Text `Ink` #F6F3FF, `InkSoft` #C2BAD8, `InkFaint` #6E6690. Bottom bar `NavSurface` #150F2C.
+- Accents, status colours and the N5 `SwatchSurround` stay as below.
+- Onboarding: 5 feature slides on every launch, each with an animated orb in the feature's accent colour; the backdrop glow takes that colour.
+
+## Visual direction (2026-10-29, superseded)
 The team chose a reference mock-up (dark wellness-dashboard style; image kept outside the repo). The app follows it:
 - **Dark only.** Warm near-black backdrop (`Night` #161714 to `Dusk` #22241F) with a soft moss glow (`Moss` #3E4636) behind the top of each screen.
 - **Frosted glass cards**: 28 dp corners, white 8% fill fading to 4%, 1 dp white 10% border. No elevation except the alert banner.

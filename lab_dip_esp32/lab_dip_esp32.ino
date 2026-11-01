@@ -10,7 +10,10 @@
  *         DHT11 data=GPIO27
  *         DS18B20 data=GPIO4 with 4.7k pull-up to 3.3V
  *
- * Serial commands (115200 baud, newline terminated):
+ * Commands: type them in the Serial Monitor (115200 baud, newline terminated), or publish the same
+ * text to MQTT_CMD_TOPIC (the LabDip Monitor app does this). Replies ("OK ..." or "ERR ...") go to
+ * serial and to MQTT_ACK_TOPIC.
+ * Serial commands:
  *   ID S001            set current Sample ID
  *   CAPTURE            store the CURRENT colour reading as the target shade
  *   TARGET 52.3 10.1 -4.2   set target Lab values manually
@@ -30,13 +33,15 @@
 #include <Adafruit_SSD1306.h>
 #include <math.h>
 #include <time.h>
+#include "secrets.h"   // WIFI_SSID, WIFI_PASS; copy secrets.example.h if missing
 
 // ---------- USER SETTINGS ----------
-const char* WIFI_SSID = "YOUR_WIFI";
-const char* WIFI_PASS = "YOUR_PASSWORD";
 const char* MQTT_HOST = "broker.hivemq.com";   // public test broker; use your own for real trials
 const int   MQTT_PORT = 1883;
 const char* MQTT_TOPIC = "rvu/team11/labdip/data";   // make this unique to avoid other people's traffic
+const char* MQTT_CMD_TOPIC = "rvu/team11/labdip/cmd"; // app -> rig commands; keep the same prefix as MQTT_TOPIC
+const char* MQTT_ACK_TOPIC = "rvu/team11/labdip/ack"; // rig -> app replies
+const char* MQTT_STATUS_TOPIC = "rvu/team11/labdip/status"; // retained "online"; broker sets "offline" (last will) if the rig drops
 const unsigned long SAMPLE_INTERVAL_MS = 3000;       // 2-5 s as per methodology
 const float BATH_TOL = 2.0;                          // +/- C alert window
 // Per-channel calibration gains (fill in after Priya's calibration against reference swatches)
@@ -64,6 +69,8 @@ float targetL = 50, targetA = 0, targetB = 0;
 float bathSet = 60.0;
 bool haveBath = false;
 bool haveTarget = false;   // false until CAPTURE or TARGET; deltaE is against the 50/0/0 placeholder until then
+bool tcsFound = false;
+bool colourOk = false;     // true only when the last TCS34725 read returned light; no colour = nothing published
 unsigned long lastSample = 0;
 
 struct Reading { float r, g, b, L, a, bb, dE, ambT, hum, press, lux, bath; bool alert; };
@@ -86,21 +93,24 @@ float deltaE76(float L1, float a1, float b1, float L2, float a2, float b2) {
 
 // ---------- Sensors ----------
 void readAll() {
-  uint16_t r, g, b, c;
-  tcs.getRawData(&r, &g, &b, &c);
-  float R = 0, G = 0, B = 0;
-  if (c > 0) {  // normalise by clear channel -> 0..255
-    R = constrain((float)r / c * 255.0 * CAL_R, 0, 255);
-    G = constrain((float)g / c * 255.0 * CAL_G, 0, 255);
-    B = constrain((float)b / c * 255.0 * CAL_B, 0, 255);
-  }
+  uint16_t r = 0, g = 0, b = 0, c = 0;
+  if (!tcsFound) tcsFound = tcs.begin();   // sensor plugged in after boot
+  if (tcsFound) tcs.getRawData(&r, &g, &b, &c);
+  // A missing or unplugged sensor reads all zeros; publishing that would show a fake black sample
+  colourOk = tcsFound && c > 0;
+  if (!colourOk) { tcsFound = false; return; }
+  float R, G, B;   // normalise by clear channel -> 0..255
+  R = constrain((float)r / c * 255.0 * CAL_R, 0, 255);
+  G = constrain((float)g / c * 255.0 * CAL_G, 0, 255);
+  B = constrain((float)b / c * 255.0 * CAL_B, 0, 255);
   cur.r = R; cur.g = G; cur.b = B;
   rgb2lab(R, G, B, cur.L, cur.a, cur.bb);
   cur.dE = deltaE76(cur.L, cur.a, cur.bb, targetL, targetA, targetB);
   float t_amb = dht.readTemperature(), h_amb = dht.readHumidity();
-  if (!isnan(t_amb)) cur.ambT = t_amb;   // keep last good value if a read fails
-  if (!isnan(h_amb)) cur.hum = h_amb;
-  cur.lux = lightMeter.readLightLevel();
+  cur.ambT = t_amb;   // NAN when the DHT11 read fails; publishReading() then leaves the field out
+  cur.hum = h_amb;
+  float lx = lightMeter.readLightLevel();
+  cur.lux = lx < 0 ? NAN : lx;   // BH1750 returns a negative value on error
   ds18.requestTemperatures();
   float t = ds18.getTempCByIndex(0);
   cur.bath = (t == DEVICE_DISCONNECTED_C) ? NAN : t;
@@ -111,7 +121,9 @@ void readAll() {
 void showOLED() {
   oled.clearDisplay(); oled.setTextSize(1); oled.setTextColor(SSD1306_WHITE);
   oled.setCursor(0, 0);  oled.printf("ID:%s dE:%.1f", sampleId.c_str(), cur.dE);
-  oled.setCursor(0, 11); oled.printf("RGB %d %d %d", (int)cur.r, (int)cur.g, (int)cur.b);
+  oled.setCursor(0, 11);
+  if (colourOk) oled.printf("RGB %d %d %d", (int)cur.r, (int)cur.g, (int)cur.b);
+  else oled.print("No colour sensor");
   oled.setCursor(0, 22); oled.printf("Bath: %.1f C", cur.bath);
   oled.setCursor(0, 33); oled.printf("Amb: %.1fC %.0f%%", cur.ambT, cur.hum);
   oled.setCursor(0, 44); oled.printf("Light: %.0f lx", cur.lux);
@@ -130,7 +142,11 @@ void connectWiFi() {
 void connectMQTT() {
   if (mqtt.connected() || WiFi.status() != WL_CONNECTED) return;
   String cid = "labdip-" + String((uint32_t)ESP.getEfuseMac(), HEX);
-  mqtt.connect(cid.c_str());
+  // Last will: if the ESP32 loses power or Wi-Fi, the broker publishes "offline" for it after the keep-alive
+  if (mqtt.connect(cid.c_str(), MQTT_STATUS_TOPIC, 0, true, "offline")) {
+    mqtt.publish(MQTT_STATUS_TOPIC, "online", true);
+    mqtt.subscribe(MQTT_CMD_TOPIC);
+  }
 }
 String isoTime() {
   struct tm t;
@@ -143,8 +159,9 @@ void publishReading() {
   d["deltaE"] = round(cur.dE * 100) / 100.0;
   d["R"] = (int)cur.r; d["G"] = (int)cur.g; d["B"] = (int)cur.b;
   d["L"] = round(cur.L * 100) / 100.0; d["a"] = round(cur.a * 100) / 100.0; d["b"] = round(cur.bb * 100) / 100.0;
-  d["ambient_temp"] = round(cur.ambT * 10) / 10.0; d["humidity"] = round(cur.hum * 10) / 10.0;
-  d["light_lux"] = round(cur.lux);
+  if (!isnan(cur.ambT)) d["ambient_temp"] = round(cur.ambT * 10) / 10.0;
+  if (!isnan(cur.hum)) d["humidity"] = round(cur.hum * 10) / 10.0;
+  if (!isnan(cur.lux)) d["light_lux"] = round(cur.lux);
   if (!isnan(cur.bath)) d["bath_temp"] = round(cur.bath * 10) / 10.0;
   d["bath_alert"] = cur.alert;
   d["setpoint_c"] = bathSet;
@@ -158,31 +175,85 @@ void publishReading() {
   Serial.println(out);  // also print to serial so you can log without Wi-Fi
 }
 
-// ---------- Serial commands ----------
+// ---------- Commands (serial and MQTT) ----------
+// MQTT commands come from a public broker, so every argument is checked before it changes state.
+bool okText(const String &v) {   // sample ID, fabric, dye: same whitelist as the app's parser
+  if (v.length() < 1 || v.length() > 24) return false;
+  for (size_t i = 0; i < v.length(); i++) {
+    char ch = v[i];
+    if (!(isalnum(ch) || ch == ' ' || ch == '_' || ch == '.' || ch == '-')) return false;
+  }
+  return true;
+}
+bool okNum(const String &v, float lo, float hi, float &out) {
+  char *end; out = strtof(v.c_str(), &end);
+  return v.length() && *end == '\0' && !isnan(out) && out >= lo && out <= hi;
+}
+
+String runCommand(String line) {
+  line.trim();
+  int sp = line.indexOf(' ');
+  String cmd = sp < 0 ? line : line.substring(0, sp); cmd.toUpperCase();
+  String arg = sp < 0 ? "" : line.substring(sp + 1); arg.trim();
+  float v;
+  if (cmd == "ID") {
+    if (!okText(arg)) return "ERR ID needs 1-24 letters, digits, space, _ . -";
+    sampleId = arg; return "OK sample=" + sampleId;
+  }
+  if (cmd == "CAPTURE") {
+    if (!colourOk) return "ERR no colour reading to capture";
+    targetL = cur.L; targetA = cur.a; targetB = cur.bb; haveTarget = true;
+    char buf[48]; snprintf(buf, sizeof(buf), "OK target Lab=%.2f %.2f %.2f", targetL, targetA, targetB); return buf;
+  }
+  if (cmd == "TARGET") {
+    float L, A, B; char extra;
+    if (sscanf(arg.c_str(), "%f %f %f %c", &L, &A, &B, &extra) != 3) return "ERR usage: TARGET L a b";
+    if (isnan(L) || isnan(A) || isnan(B) || L < 0 || L > 100 || A < -128 || A > 128 || B < -128 || B > 128)
+      return "ERR L 0-100, a and b -128 to 128";
+    targetL = L; targetA = A; targetB = B; haveTarget = true;
+    char buf[48]; snprintf(buf, sizeof(buf), "OK target Lab=%.2f %.2f %.2f", targetL, targetA, targetB); return buf;
+  }
+  if (cmd == "BATH") {
+    if (!okNum(arg, 0, 130, v)) return "ERR BATH needs 0-130 C";
+    bathSet = v; haveBath = true;
+    char buf[40]; snprintf(buf, sizeof(buf), "OK bath=%.1f +/- %.1f", bathSet, BATH_TOL); return buf;
+  }
+  if (cmd == "FABRIC") { if (!okText(arg)) return "ERR FABRIC needs 1-24 letters, digits, space, _ . -"; fabric = arg; return "OK fabric=" + fabric; }
+  if (cmd == "DYE")    { if (!okText(arg)) return "ERR DYE needs 1-24 letters, digits, space, _ . -"; dye = arg; return "OK dye=" + dye; }
+  if (cmd == "CONC") {
+    if (!okNum(arg, 0, 100, v)) return "ERR CONC needs 0-100 %";
+    conc = v; char buf[24]; snprintf(buf, sizeof(buf), "OK conc=%.2f", conc); return buf;
+  }
+  return "ERR unknown command";
+}
+
 void handleSerial() {
   if (!Serial.available()) return;
   String line = Serial.readStringUntil('\n'); line.trim();
   if (!line.length()) return;
-  String cmd = line.substring(0, line.indexOf(' ') < 0 ? line.length() : line.indexOf(' ')); cmd.toUpperCase();
-  String arg = line.indexOf(' ') < 0 ? "" : line.substring(line.indexOf(' ') + 1); arg.trim();
-  if (cmd == "ID")       { sampleId = arg; Serial.println("OK sample=" + sampleId); }
-  else if (cmd == "CAPTURE") { targetL = cur.L; targetA = cur.a; targetB = cur.bb; haveTarget = true; Serial.printf("OK target Lab=%.2f %.2f %.2f\n", targetL, targetA, targetB); }
-  else if (cmd == "TARGET")  {
-    float L, A, B;
-    if (sscanf(arg.c_str(), "%f %f %f", &L, &A, &B) == 3) { targetL = L; targetA = A; targetB = B; haveTarget = true; Serial.println("OK target set"); }
-    else Serial.println("Usage: TARGET L a b");
+  Serial.println(runCommand(line));
+}
+
+void onMqttMessage(char *topic, byte *payload, unsigned int len) {
+  if (strcmp(topic, MQTT_CMD_TOPIC) != 0) return;
+  if (len == 0 || len > 64) return;   // size cap: real commands are short
+  char line[65];
+  for (unsigned int i = 0; i < len; i++) {
+    if (payload[i] < 32 || payload[i] > 126) return;   // printable ASCII only
+    line[i] = (char)payload[i];
   }
-  else if (cmd == "BATH")    { bathSet = arg.toFloat(); haveBath = true; Serial.printf("OK bath=%.1f +/- %.1f\n", bathSet, BATH_TOL); }
-  else if (cmd == "FABRIC")  { fabric = arg; Serial.println("OK"); }
-  else if (cmd == "DYE")     { dye = arg; Serial.println("OK"); }
-  else if (cmd == "CONC")    { conc = arg.toFloat(); Serial.println("OK"); }
-  else Serial.println("Unknown command");
+  line[len] = '\0';
+  String reply = runCommand(String(line));
+  Serial.println(String("MQTT> ") + line + " -> " + reply);   // Serial Monitor sees app commands too
+  mqtt.publish(MQTT_ACK_TOPIC, reply.c_str());
+  if (reply.startsWith("OK")) lastSample = millis() - SAMPLE_INTERVAL_MS;   // publish a fresh reading now
 }
 
 void setup() {
   Serial.begin(115200);
   Wire.begin(21, 22);
-  if (!tcs.begin())  Serial.println("TCS34725 not found");
+  tcsFound = tcs.begin();
+  if (!tcsFound) Serial.println("TCS34725 not found");
   dht.begin();
   if (!lightMeter.begin()) Serial.println("BH1750 not found");
   ds18.begin();
@@ -191,6 +262,8 @@ void setup() {
   connectWiFi();
   mqtt.setServer(MQTT_HOST, MQTT_PORT);
   mqtt.setBufferSize(512);   // default 256 B silently drops full payloads
+  mqtt.setCallback(onMqttMessage);
+  mqtt.setKeepAlive(10);   // broker notices a dead rig in ~15 s
   Serial.println("Ready. Commands: ID, CAPTURE, TARGET, BATH, FABRIC, DYE, CONC");
 }
 
@@ -201,6 +274,8 @@ void loop() {
   mqtt.loop();
   if (millis() - lastSample >= SAMPLE_INTERVAL_MS) {
     lastSample = millis();
-    readAll(); showOLED(); publishReading();
+    readAll(); showOLED();
+    if (colourOk) publishReading();
+    else Serial.println("No colour reading (TCS34725 missing or dark); nothing published");
   }
 }

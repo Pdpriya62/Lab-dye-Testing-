@@ -5,8 +5,9 @@
 2. **Trend**
 3. **Samples** (history list), then **Sample detail**
 4. **Settings** (broker + thresholds)
+5. **Rig controls** (from the Live header button): send ID, CAPTURE, TARGET, BATH, FABRIC, DYE, CONC; see the rig's replies
 
-Bottom navigation: Live, Trend, Samples, Settings. First launch shows a 3-page onboarding (swipe or Next; Skip) before Connect.
+Bottom navigation: Live, Trend, Samples, Settings. Every launch shows a 5-slide feature intro (swipe or Next; Skip). First launch then goes to Connect, later launches to Live.
 
 ## First launch
 ```

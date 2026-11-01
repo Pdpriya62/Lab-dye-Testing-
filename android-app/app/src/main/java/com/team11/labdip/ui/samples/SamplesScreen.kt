@@ -116,7 +116,8 @@ private fun SwipeRow(row: SampleRow, now: Long, onOpen: (String) -> Unit, onDele
         state = swipe,
         enableDismissFromStartToEnd = false,
         backgroundContent = {
-            Box(Modifier.fillMaxSize().clip(CardShape).background(Color(0xFF3A1F1F)).padding(end = 24.dp), contentAlignment = Alignment.CenterEnd) {
+            // Glass cards are translucent: draw the delete layer only while swiping, or it shows through
+            if (swipe.dismissDirection == SwipeToDismissBoxValue.EndToStart) Box(Modifier.fillMaxSize().clip(CardShape).background(Color(0xFF3A1F1F)).padding(end = 24.dp), contentAlignment = Alignment.CenterEnd) {
                 Icon(Icons.Rounded.Delete, contentDescription = "Delete", tint = Fail)
             }
         },

@@ -3,7 +3,8 @@ Fake ESP32 lab-dip rig: publishes the same JSON as lab_dip_esp32.ino publishRead
 can be tested without hardware. Includes bath excursions (bath_alert) and some malformed messages.
 
   python -m pip install paho-mqtt
-  python tools/fake_rig.py                       # public broker, default topic, 3 s interval
+  python tools/fake_rig.py                       # public broker, topic rvu/team11/labdip/fake, 3 s interval
+  python tools/fake_rig.py --topic rvu/team11/labdip/data   # feed the app (stop the real rig first)
   python tools/fake_rig.py --bad-rate 0.2 --interval 1
 """
 import argparse, json, math, random, time
@@ -14,7 +15,8 @@ import paho.mqtt.client as mqtt
 ap = argparse.ArgumentParser()
 ap.add_argument("--host", default="broker.hivemq.com")
 ap.add_argument("--port", type=int, default=1883)
-ap.add_argument("--topic", default="rvu/team11/labdip/data")
+# Own topic by default so fake readings never mix with the real rig; pass --topic rvu/team11/labdip/data on purpose
+ap.add_argument("--topic", default="rvu/team11/labdip/fake")
 ap.add_argument("--interval", type=float, default=3.0, help="seconds between readings (firmware: 3)")
 ap.add_argument("--per-sample", type=int, default=40, help="readings before switching to the next sample ID")
 ap.add_argument("--bad-rate", type=float, default=0.05, help="fraction of messages that are malformed")

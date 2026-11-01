@@ -26,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.HotTub
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.Thermostat
+import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material.icons.rounded.WarningAmber
 import androidx.compose.material.icons.rounded.WaterDrop
 import androidx.compose.material.icons.rounded.WbSunny
@@ -48,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.team11.labdip.data.db.ReadingEntity
+import com.team11.labdip.data.model.RigLink
 import com.team11.labdip.data.mqtt.ConnectionState
 import com.team11.labdip.ui.components.GlassCard
 import com.team11.labdip.ui.components.GlassIcon
@@ -74,13 +76,13 @@ import com.team11.labdip.ui.theme.Marginal
 import com.team11.labdip.ui.theme.Pass
 
 @Composable
-fun LiveRoute(onOpenSettings: () -> Unit, vm: LiveViewModel = viewModel(factory = LiveViewModel.Factory)) {
+fun LiveRoute(onOpenSettings: () -> Unit, onOpenControls: () -> Unit, vm: LiveViewModel = viewModel(factory = LiveViewModel.Factory)) {
     val state by vm.state.collectAsStateWithLifecycle()
-    LiveScreen(state, onSelect = vm::select, onOpenSettings = onOpenSettings)
+    LiveScreen(state, onSelect = vm::select, onOpenSettings = onOpenSettings, onOpenControls = onOpenControls)
 }
 
 @Composable
-fun LiveScreen(state: LiveUiState, onSelect: (Metric) -> Unit, onOpenSettings: () -> Unit) {
+fun LiveScreen(state: LiveUiState, onSelect: (Metric) -> Unit, onOpenSettings: () -> Unit, onOpenControls: () -> Unit = {}) {
     Backdrop(Modifier.fillMaxSize()) {
         Column(
             Modifier
@@ -90,12 +92,20 @@ fun LiveScreen(state: LiveUiState, onSelect: (Metric) -> Unit, onOpenSettings: (
                 .padding(horizontal = 16.dp)
                 .padding(bottom = 16.dp),
         ) {
-            Header(state)
+            Header(state, onOpenControls)
             Spacer(Modifier.height(16.dp))
             val r = state.reading
             if (r == null) {
-                EmptyHero(state.connection, onOpenSettings)
+                EmptyHero(state.connection, state.rig, onOpenSettings)
             } else {
+                if (state.connection is ConnectionState.Connected && state.rig != RigLink.Online) {
+                    Text(
+                        (if (state.rig == RigLink.Offline) "Rig offline. " else "Rig online but not sending. ") +
+                            "Showing the last reading from ${ago(state.ageMs)}.",
+                        style = LabType.body, color = if (state.rig == RigLink.Offline) Fail else Marginal,
+                        modifier = Modifier.padding(bottom = 12.dp),
+                    )
+                }
                 Column(Modifier.alpha(if (state.stale) 0.55f else 1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     HeroGauge(state, r, onSelect)
                     SplitSwatch(
@@ -136,7 +146,7 @@ fun LiveScreen(state: LiveUiState, onSelect: (Metric) -> Unit, onOpenSettings: (
 }
 
 @Composable
-private fun Header(state: LiveUiState) {
+private fun Header(state: LiveUiState, onOpenControls: () -> Unit) {
     val r = state.reading
     Row(Modifier.fillMaxWidth().padding(top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
@@ -148,17 +158,26 @@ private fun Header(state: LiveUiState) {
             )
             Text("Live dip", style = LabType.title, color = Ink, modifier = Modifier.semantics { heading() })
         }
-        ConnectionPill(state)
+        Column(horizontalAlignment = Alignment.End) {
+            ConnectionPill(state)
+            Spacer(Modifier.height(8.dp))
+            GlassIcon(Icons.Rounded.Tune, contentDescription = "Rig controls", onClick = onOpenControls)
+        }
     }
 }
 
 @Composable
 fun ConnectionPill(state: LiveUiState) {
     val (dot, text) = when (val c = state.connection) {
-        is ConnectionState.Connected -> Pass to (if (state.reading != null) ago(state.ageMs) else "Connected")
+        // Broker fine but the rig has gone quiet (unplugged, no colour reading): say so instead of a green dot
+        is ConnectionState.Connected -> when (state.rig) {
+            RigLink.Offline -> Fail to "Rig offline"
+            RigLink.Quiet -> Marginal to "No new data · ${ago(state.ageMs)}"
+            RigLink.Online -> Pass to (if (state.reading != null) ago(state.ageMs) else "Rig online")
+        }
         is ConnectionState.Connecting -> Marginal to "Connecting"
         is ConnectionState.Reconnecting -> Marginal to "Reconnecting"
-        is ConnectionState.Offline -> Fail to "Offline"
+        is ConnectionState.Offline -> Fail to "Broker offline"
         ConnectionState.Idle -> InkSoft to "Not connected"
     }
     Row(
@@ -362,9 +381,11 @@ private fun LabRow(label: String, l: Double, a: Double, b: Double) {
 }
 
 @Composable
-private fun EmptyHero(connection: ConnectionState, onOpenSettings: () -> Unit) {
+private fun EmptyHero(connection: ConnectionState, rig: RigLink, onOpenSettings: () -> Unit) {
     val (title, body, showSettings) = when (connection) {
-        is ConnectionState.Connected -> Triple("Connected", "Waiting for the rig to publish on ${connection.topic}.", false)
+        is ConnectionState.Connected ->
+            if (rig == RigLink.Offline) Triple("Rig offline", "Connected to the broker, but the ESP32 isn't. Power it on and check its Wi-Fi.", false)
+            else Triple("Rig online", "Waiting for the rig to publish on ${connection.topic}.", false)
         is ConnectionState.Offline -> Triple("Offline", "Can't reach ${connection.host}. Check Wi-Fi or broker settings.", true)
         is ConnectionState.Connecting -> Triple("Connecting", "Connecting to ${connection.host}…", false)
         is ConnectionState.Reconnecting -> Triple("Reconnecting", "Connection to ${connection.host} lost. Retrying…", false)
