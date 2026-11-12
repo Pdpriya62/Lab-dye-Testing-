@@ -2,6 +2,7 @@ package com.team11.labdip
 
 import android.content.Context
 import androidx.room.Room
+import com.team11.labdip.data.CameraRepository
 import com.team11.labdip.data.ReadingRepository
 import com.team11.labdip.data.db.AppDatabase
 import com.team11.labdip.data.mqtt.MqttRepository
@@ -19,9 +20,11 @@ class AppContainer(context: Context) {
     val readings = ReadingRepository(db.readings())
     val settings = SettingsRepository(context)
     val mqtt = MqttRepository()
+    val camera = CameraRepository()
 
     init {
         scope.launch { mqtt.messages.collect { readings.ingest(it) } }
+        scope.launch { mqtt.camera.collect { camera.ingest(it) } }
     }
 
     /** App came to foreground: connect if the user has set up a broker. */

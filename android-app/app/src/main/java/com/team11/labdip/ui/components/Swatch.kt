@@ -35,14 +35,16 @@ import com.team11.labdip.ui.theme.SwatchSurround
 fun SplitSwatch(
     measured: Color,
     target: Color?,
-    deltaE: Double,
+    deltaE: Double?,
     status: Status?,
     modifier: Modifier = Modifier,
+    label: String = "ΔE",
+    spokenLabel: String = "Delta E",
 ) {
     val m by animateColorAsState(measured, tween(300), label = "swatch")
     val desc = buildString {
         append("Measured colour red ${(measured.red * 255).toInt()}, green ${(measured.green * 255).toInt()}, blue ${(measured.blue * 255).toInt()}. ")
-        append("Delta E ${deltaE.fmt(2)}")
+        if (deltaE != null) append("$spokenLabel ${deltaE.fmt(2)}")
         if (status != null) append(", ${status.word().lowercase()}")
         if (target == null) append(". No target set")
     }
@@ -64,7 +66,7 @@ fun SplitSwatch(
             Modifier.align(if (target != null) Alignment.Center else Alignment.BottomCenter).padding(bottom = if (target != null) 0.dp else 10.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text("ΔE ${deltaE.fmt(2)}", style = LabType.big, color = seamInk)
+            if (deltaE != null) Text("$label ${deltaE.fmt(2)}", style = LabType.big, color = seamInk)
         }
     }
 }

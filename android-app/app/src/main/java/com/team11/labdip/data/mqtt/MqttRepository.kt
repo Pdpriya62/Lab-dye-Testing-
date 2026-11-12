@@ -44,6 +44,10 @@ class MqttRepository {
     private val _replies = MutableSharedFlow<String>(extraBufferCapacity = 16, onBufferOverflow = BufferOverflow.DROP_OLDEST)
     val replies: SharedFlow<String> = _replies
 
+    // Camera-station results (cam_capture.py); parsed by CameraRepository, never by ReadingParser
+    private val _camera = MutableSharedFlow<ByteArray>(extraBufferCapacity = 8, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+    val camera: SharedFlow<ByteArray> = _camera
+
     // Rig presence from its retained status / last will; null = nothing heard (older firmware)
     private val _rigOnline = MutableStateFlow<Boolean?>(null)
     val rigOnline: StateFlow<Boolean?> = _rigOnline
@@ -68,6 +72,7 @@ class MqttRepository {
         current = b
         val replyTopic = ackTopic(b.topic)
         val rigStatusTopic = statusTopic(b.topic)
+        val cameraTopic = camTopic(b.topic)
         var everConnected = false
         val c = builder(b, addr = addr)
             .automaticReconnect().initialDelay(1, TimeUnit.SECONDS).maxDelay(30, TimeUnit.SECONDS).applyAutomaticReconnect()
@@ -79,6 +84,7 @@ class MqttRepository {
                     client?.subscribeWith()?.topicFilter(b.topic)?.qos(MqttQos.AT_MOST_ONCE)?.send()
                     client?.subscribeWith()?.topicFilter(replyTopic)?.qos(MqttQos.AT_MOST_ONCE)?.send()
                     client?.subscribeWith()?.topicFilter(rigStatusTopic)?.qos(MqttQos.AT_MOST_ONCE)?.send()
+                    client?.subscribeWith()?.topicFilter(cameraTopic)?.qos(MqttQos.AT_LEAST_ONCE)?.send()
                 }
             }
             .addDisconnectedListener { ctx ->
@@ -99,6 +105,7 @@ class MqttRepository {
                     "online" -> _rigOnline.value = true
                     "offline" -> _rigOnline.value = false
                 }
+                cameraTopic -> _camera.tryEmit(it.payloadAsBytes)
                 else -> _messages.tryEmit(it.payloadAsBytes)
             }
         }

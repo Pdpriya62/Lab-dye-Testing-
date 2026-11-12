@@ -9,7 +9,9 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.team11.labdip.LabDipApp
+import com.team11.labdip.data.CameraRepository
 import com.team11.labdip.data.ReadingRepository
+import com.team11.labdip.data.model.CamShot
 import com.team11.labdip.data.db.ReadingEntity
 import com.team11.labdip.data.model.RIG_STALE_MS
 import com.team11.labdip.data.model.RigLink
@@ -44,8 +46,24 @@ data class LiveUiState(
     val dropped: Int = 0,
     val now: Long = System.currentTimeMillis(),
     val rigOnline: Boolean? = null,
+    val cam: CamShot? = null,
 ) {
     val status: Status? get() = reading?.let { statusFor(it.deltaE, settings.passMax, settings.marginalMax) }
+
+    val camAgeMs: Long get() = cam?.let { now - it.receivedAt } ?: 0
+    /** Same Pass/Marginal limits as the sensor, applied to the camera's ΔE2000. */
+    val camStatus: Status? get() = cam?.result?.deltaE2000?.let { statusFor(it, settings.passMax, settings.marginalMax) }
+    val camOtherSample: Boolean get() = cam != null && reading != null && cam.result.sampleId != reading.sampleId
+    val camOld: Boolean get() = cam != null && camAgeMs > CAM_OLD_MS
+
+    /** Camera's own target when it sent one, else the live target. */
+    val camTarget: Rgb? get() {
+        val c = cam?.result ?: return null
+        if (c.targetL != null && c.targetA != null && c.targetB != null) {
+            return labToRgb(c.targetL, c.targetA, c.targetB).let { Rgb(it.first, it.second, it.third) }
+        }
+        return target
+    }
 
     /** Firmware target when it says one is set, else the manual target from Settings. */
     val target: Rgb? get() {
@@ -67,6 +85,7 @@ data class LiveUiState(
 
     companion object {
         const val STALE_MS = RIG_STALE_MS
+        const val CAM_OLD_MS = 10 * 60_000L
     }
 }
 
@@ -75,15 +94,16 @@ class LiveViewModel(
     readings: ReadingRepository,
     settings: SettingsRepository,
     private val vibrator: Vibrator?,
+    camera: CameraRepository,
 ) : ViewModel() {
     private val metric = MutableStateFlow(Metric.DeltaE)
     private val ticker = flow { while (true) { emit(System.currentTimeMillis()); delay(1_000) } }
 
     val state: StateFlow<LiveUiState> = combine(
         combine(mqtt.state, mqtt.rigOnline) { c, r -> c to r }, readings.latest(), settings.settings, metric,
-        combine(readings.dropped, ticker) { d, t -> d to t },
-    ) { (conn, rigOnline), reading, s, m, (dropped, now) ->
-        LiveUiState(conn, reading, s, m, dropped, now, rigOnline)
+        combine(readings.dropped, camera.dropped, ticker, camera.latest) { d, cd, t, cam -> Triple(d + cd, t, cam) },
+    ) { (conn, rigOnline), reading, s, m, (dropped, now, cam) ->
+        LiveUiState(conn, reading, s, m, dropped, now, rigOnline, cam)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LiveUiState())
 
     init {
@@ -107,7 +127,7 @@ class LiveViewModel(
             initializer {
                 val app = this[APPLICATION_KEY] as LabDipApp
                 val c = app.container
-                LiveViewModel(c.mqtt, c.readings, c.settings, app.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator)
+                LiveViewModel(c.mqtt, c.readings, c.settings, app.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator, c.camera)
             }
         }
     }

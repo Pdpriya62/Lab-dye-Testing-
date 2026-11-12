@@ -97,6 +97,8 @@ fun LiveScreen(state: LiveUiState, onSelect: (Metric) -> Unit, onOpenSettings: (
             val r = state.reading
             if (r == null) {
                 EmptyHero(state.connection, state.rig, onOpenSettings)
+                // Camera results arrive independently of the rig, so show them even before the first reading
+                if (state.cam != null) CameraCard(state, Modifier.padding(top = 12.dp))
             } else {
                 if (state.connection is ConnectionState.Connected && state.rig != RigLink.Online) {
                     Text(
@@ -125,6 +127,8 @@ fun LiveScreen(state: LiveUiState, onSelect: (Metric) -> Unit, onOpenSettings: (
                     }
                     LabCard(r)
                 }
+                // Outside the stale fade: a quiet rig does not make the camera result old
+                if (state.cam != null) CameraCard(state, Modifier.padding(top = 12.dp))
                 if (state.dropped > 0) {
                     Text(
                         "${state.dropped} malformed messages ignored",
@@ -430,6 +434,18 @@ private val previewReading = ReadingEntity(
 @Composable
 private fun LivePreview() = LabDipTheme {
     LiveScreen(LiveUiState(ConnectionState.Connected("broker.hivemq.com", "rvu/team11/labdip/data"), previewReading), {}, {})
+}
+
+@Preview(widthDp = 380, heightDp = 2400)
+@Composable
+private fun LiveWithCameraPreview() = LabDipTheme {
+    LiveScreen(
+        LiveUiState(
+            ConnectionState.Connected("broker.hivemq.com", "rvu/team11/labdip/data"), previewReading,
+            cam = com.team11.labdip.data.model.CamShot(previewCam.copy(sampleId = "S002"), System.currentTimeMillis() - 20_000),
+        ),
+        {}, {},
+    )
 }
 
 @Preview(widthDp = 380, heightDp = 800)

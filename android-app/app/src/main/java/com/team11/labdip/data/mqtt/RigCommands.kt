@@ -6,6 +6,8 @@ import java.util.Locale
 fun commandTopic(dataTopic: String) = sibling(dataTopic, "cmd")
 fun ackTopic(dataTopic: String) = sibling(dataTopic, "ack")
 fun statusTopic(dataTopic: String) = sibling(dataTopic, "status")
+/** Camera station results from `camera/cam_capture.py --mqtt`. */
+fun camTopic(dataTopic: String) = sibling(dataTopic, "cam")
 
 private fun sibling(dataTopic: String, leaf: String) =
     dataTopic.substringBeforeLast('/', "").let { if (it.isEmpty()) leaf else "$it/$leaf" }
