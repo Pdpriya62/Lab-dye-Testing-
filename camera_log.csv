@@ -1,0 +1,8 @@
+sample_id,timestamp,cam_R,cam_G,cam_B,cam_L,cam_a,cam_b,target_L,target_a,target_b,cam_deltaE2000,sensor_L,sensor_a,sensor_b,cam_vs_sensor_dE2000,levelness_max,levelness_mean,levelness,grid,roi,white,image_file,annotated_file
+WHITE,2026-11-12T23:36:20,165,247,157,90.3,-41.88,35.58,,,,,,,,,0.55,0.44,uniform,3,auto,none,images\WHITE_20261112_233620.jpg,images\WHITE_20261112_233620_annotated.jpg
+S001,2026-11-12T23:38:10,232,222,117,87.27,-10.15,52.35,,,,,,,,,5.73,1.52,uneven,3,auto,flat,images\S001_20261112_233810.jpg,images\S001_20261112_233810_annotated.jpg
+WHITE,2026-11-13T00:13:39,122,192,131,71.88,-34.71,23.98,,,,,,,,,5.35,2.34,uneven,3,auto,none,images\WHITE_20261113_001339.jpg,images\WHITE_20261113_001339_annotated.jpg
+WHITE,2026-11-13T00:14:52,67,110,67,42.38,-24.58,19.41,,,,,,,,,3.6,2.45,uneven,3,auto,none,images\WHITE_20261113_001452.jpg,images\WHITE_20261113_001452_annotated.jpg
+WHITE,2026-11-13T00:15:48,219,255,218,96.67,-18.29,13.86,,,,,,,,,5.84,2.09,uneven,3,auto,none,images\WHITE_20261113_001548.jpg,images\WHITE_20261113_001548_annotated.jpg
+WHITE,2026-11-13T00:20:53,140,209,132,77.78,-36.6,31.5,,,,,,,,,1.73,0.89,uneven,3,auto,none,images\WHITE_20261113_002053.jpg,images\WHITE_20261113_002053_annotated.jpg
+S001,2026-11-13T00:22:49,206,197,102,78.4,-9.71,48.31,,,,,,,,,29.87,7.87,uneven,3,auto,flat,images\S001_20261113_002249.jpg,images\S001_20261113_002249_annotated.jpg
