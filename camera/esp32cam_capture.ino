@@ -20,7 +20,7 @@ const char* WIFI_SSID = "YOUR_WIFI";
 const char* WIFI_PASS = "YOUR_PASSWORD";
 const char* HOSTNAME  = "labdip-cam";
 #define LOCK_COLOUR_SETTINGS 1   // 1 = fixed white balance + exposure (needed for repeatable colour); 0 = auto
-#define MANUAL_EXPOSURE 300      // 0..1200, raise if images are dark, lower if bright (tune with a white card)
+#define MANUAL_EXPOSURE 150      // 0..1200, raise if images are dark, lower if bright (tune with a white card)
 // -----------------------------------
 
 // AI-Thinker ESP32-CAM pin map
