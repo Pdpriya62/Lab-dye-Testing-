@@ -33,6 +33,7 @@ Sensors -> ESP32 -> MQTT broker -> phone: parser -> Room DB -> ViewModel -> scre
    | `cmd` | app to rig | text commands, same as serial |
    | `ack` | rig to app | `OK ...` or `ERR ...` replies |
    | `status` | rig to app | retained `online`; the broker publishes `offline` (MQTT last will) if the rig drops |
+   | `cam` | laptop to app | camera result per capture from `camera/cam_capture.py --mqtt`: Lab, ΔE2000, levelness grid; shown in the Live screen's camera card, kept in memory only |
 
 5. **Phone, receive** (`MqttRepository`): one HiveMQ MQTT 3.1.1 client per app process. It connects when the app is in the foreground, reconnects with 1–30 s backoff, and sorts each message by topic.
 6. **Validate** (`ReadingParser`): every payload is treated as hostile. The rules:
@@ -82,7 +83,6 @@ This exists because, on 2026-11-01, readings appeared with the ESP32 unplugged. 
 | File | What it does |
 |---|---|
 | `lab_dip_esp32.ino` | Sensors, colour maths, OLED, MQTT publish, command handling (serial and MQTT), last will |
-| `secrets.h` (gitignored) | Wi-Fi name and password; copy from `secrets.example.h` |
 
 ### App (`app/src/main/java/com/team11/labdip/`)
 | File | What it does |
@@ -151,4 +151,4 @@ This exists because, on 2026-11-01, readings appeared with the ESP32 unplugged. 
 - **ΔE formula:** CIE76 only. CIEDE2000 and per-customer limits are open questions.
 - **Background:** no alerts while the app is closed; it would need a foreground service.
 - **Release:** create a signing key, check every screen on the release build with TLS on, then the Play internal track.
-- **Calibration:** `CAL_R/G/B` are still 1.0 until calibrated against reference swatches.
+- **Calibration:** `CAL_R/G/B` were set against white paper on 2026-11-12 (`1.0`, `1.585`, `2.708`, TCS gain `1X`). White paper reads neutral grey, L ≈ 55, because the firmware divides by the clear channel. Lab values from before that date used gains of 1.0.

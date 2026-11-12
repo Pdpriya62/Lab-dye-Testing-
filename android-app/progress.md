@@ -2,6 +2,22 @@
 
 Update after every completed prompt or task. Newest first.
 
+## 2026-11-12 (audit: intro ANR)
+- Root cause of the intro ANR: `Backdrop` rebuilt the full-screen weave `Path` (~1500 points, a `sin()` each) on every frame, on every screen. Experiment with the weave off: slow UI-thread frames 44 to 0. Fix in `ui/theme/Theme.kt`: paths built once per size with `drawWithCache`, animated by `translate()` only (same wave, same direction).
+- Measured on the intro (emulator, host GPU, 12 s): slow UI-thread frames 44/20/21 before, 0/12/6/7/4 after; median frame 38 ms before, 28–34 ms after. 46 unit tests pass, lint 0 errors.
+- Open, not fixed: Live has ~1 slow frame per second (2.6% jank), matching the 1 s ticker that rebuilds the whole `LiveUiState`. Minor; candidate fix is to tick only the age text.
+
+## 2026-11-12 (camera card in the app)
+- Built `app-change.md`: `camTopic()`, `CamResult` + `CamParser` (untrusted input rules), `CameraRepository` (in memory, see architecture.md), `MqttRepository` subscribes `.../cam` and routes it away from `ReadingParser`, `LiveUiState.cam`, `CameraCard` + `LevelnessGrid` on Live (also shown before the first rig reading), `SplitSwatch` takes a ΔE label.
+- `testDebugUnitTest` 46 pass (11 new `CamParserTest`), `lintDebug` 0 errors, `assembleDebug` ok.
+- Emulator (Medium_Phone, host GPU): onboarding, Connect, Live; a real `cam_capture.py --mqtt` result showed with ΔE2000 0.27 Pass and the 3×3 grid matching the script (max 2.57, mean 1.18, Uneven); 4×4 without target showed "No target set"; 4 malformed `.../cam` payloads did not crash the app. On a 2 GB software-GPU emulator the intro animation caused an ANR before any changed code ran; with 4 GB and host GPU it was smooth. Not yet run on the phone.
+- Firmware: fixed NTP never starting when Wi-Fi connected during `setup()` (cause of the 1970 timestamps). Flashed both boards; main and camera ran together on the `408` hotspot with no brownouts.
+
+## 2026-11-12 (camera station)
+- Firmware: TCS34725 reading is the per-channel median of 3 reads (steadier ΔE). JSON unchanged. Compiles: 76% flash. Not flashed yet.
+- `camera/cam_capture.py` rebuilt on OpenCV: automatic patch detection (centre fallback), glare mask, `--flat` white-paper flat-field, ΔE2000 vs target, levelness grid with annotated photo, `--mqtt` (sample/target/sensor Lab from the rig, result on `rvu/team11/labdip/cam`), `--loop` for the demo. `camera/test_cam_capture.py`: 14/14 pass. MQTT round trip verified on a test topic (592 B payload).
+- Wrote `app-change.md`: plan for the camera card on Live (contract, parser, in-memory repository, levelness grid). App code not changed yet.
+
 ## 2026-11-01 (docs and release)
 - Wrote `explanation.md`: end-to-end walkthrough, colour maths, rig presence, key files, decisions, testing, limits.
 - Updated `CLAUDE.md`: topics and command rules, rig presence, IPv4, new UI packages, firmware secrets, signing, fake rig topic, firmware compile check, user-only commits, both remotes.

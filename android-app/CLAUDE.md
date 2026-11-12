@@ -41,7 +41,7 @@ Android app that subscribes to the ESP32 lab-dip rig over MQTT and shows colour,
 - Release: R8 on, cleartext off, `allowBackup="false"`, no payload/credential logging.
 - Never add a trust-all `TrustManager` or disable cert checks.
 - Rig replies and status are untrusted too: replies max 128 B printable ASCII; status only the exact words `online` / `offline`.
-- Firmware: Wi-Fi credentials only in gitignored `../lab_dip_esp32/secrets.h` (template `secrets.example.h`). Every command argument is range-checked or whitelisted; publish only real sensor values (no colour reading = no message; failed sensors = field left out).
+- Firmware: Wi-Fi credentials are `WIFI_SSID` / `WIFI_PASS` in the gitignored `../lab_dip_esp32/secrets.h` (template `secrets.example.h`). Every command argument is range-checked or whitelisted; publish only real sensor values (no colour reading = no message; failed sensors = field left out).
 - Release signing only through gitignored `keystore.properties`; never commit `*.jks` / `*.keystore`.
 - `tools/fake_rig.py` defaults to `rvu/team11/labdip/fake`; never point it at the real topic while the rig is running.
 

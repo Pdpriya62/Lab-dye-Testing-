@@ -63,7 +63,7 @@ The sketch folder must contain only the `.ino` file with the same name as the fo
 
 1. Install the libraries once (**Sketch > Include Library > Manage Libraries**): Adafruit TCS34725, Adafruit SSD1306, Adafruit GFX, BH1750, DHT sensor library, OneWire, DallasTemperature, PubSubClient, ArduinoJson. (All are already installed on this laptop in `Documents\Arduino\libraries`.)
 2. Open `lab_dip_esp32\lab_dip_esp32.ino`.
-3. Set your Wi-Fi name and password in `WIFI_SSID` and `WIFI_PASS` at the top of the file. Do not commit real passwords to git.
+3. Copy `lab_dip_esp32/secrets.example.h` to `lab_dip_esp32/secrets.h` and set your Wi-Fi name and password in `WIFI_SSID` and `WIFI_PASS` there. `secrets.h` is gitignored. Do not commit real passwords to git.
 4. **Tools > Board > esp32 > ESP32 Dev Module.**
 5. **Tools > Port > COM9** (the "Silicon Labs CP210x" port).
 6. Click **Upload**.
@@ -147,7 +147,7 @@ Example JSON line from the ESP32:
 | `bath_alert` | calculated | `true` when the bath is outside set point ±2 °C (only after a `BATH` command). | `false`. |
 | `ambient_temp` | DHT11 | Room temperature (°C). | Inside the dataset's normal range. |
 | `humidity` | DHT11 | Room humidity (%RH). | Inside the dataset's normal range. |
-| `light_lux` | BH1750 | Light-box brightness (lux). | Near the 1200 lux target. |
+| `light_lux` | BH1750 | Room brightness (lux). The BH1750 is on the breadboard, outside the measurement box. | Steady during a test. |
 
 **ΔE in plain words:** ΔE 1 is about the smallest colour difference a human eye can see. Below 1 the dyed sample matches the standard. Above 2–3, people can see the difference.
 
@@ -155,7 +155,7 @@ Example JSON line from the ESP32:
 
 - `L 40.6, a −3.25, b +22.9`: a medium-dark yellowish colour. With no fabric, this is the desk surface under warm room light.
 - `deltaE 24.98`: meaningless, because `target_set` is `false`. It is the difference from the placeholder grey 50/0/0. Check: √(9.4² + 3.25² + 22.9²) ≈ 24.98.
-- `light_lux 15`: very dim, like a dark room. The light-box target is 1200 lux.
+- `light_lux 15`: very dim, like a dark room. `compare_live.py` still compares lux with a 1200 lux light-box target, which does not apply now that the BH1750 measures room light.
 - `bath_temp 28.3`: the probe is in air, so it reads room temperature.
 - `setpoint_c 60` with `bath_alert false`: no `BATH` command was sent yet, so the alert is not armed.
 - `ambient_temp 28.5`, `humidity 50.7`: normal room conditions.

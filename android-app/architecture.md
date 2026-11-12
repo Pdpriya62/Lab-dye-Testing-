@@ -76,6 +76,7 @@ The Serial Monitor keeps working; the firmware prints app commands there as `MQT
 - **Direct MQTT, no backend**: zero infrastructure; matches the existing firmware as-is.
 - **Commands on the same broker** (2026-11-01): ESP32, app and Serial Monitor share `broker.hivemq.com`; command and reply topics sit next to the data topic. Public broker means anyone can send commands, accepted for the demo (see `security.md`).
 - **Rig presence** (2026-11-01): firmware MQTT last will publishes retained `offline` on `.../status`; it publishes retained `online` after connecting. The app combines that with reading age (`rigLink()`): offline, quiet (online but no data) or online.
+- **Camera results in memory** (2026-11-12): `.../cam` from `camera/cam_capture.py` goes MQTT -> `CamParser` -> `CameraRepository` (latest result in a `StateFlow`) -> `LiveViewModel` -> `CameraCard`. Deliberate exception to "Room is the single source of truth": one value, no history needed for the demo, no schema migration. Cost: the card is empty after an app restart until the next capture. Upgrade path: a `camera_results` Room table.
 - **IPv4 first**: `broker.hivemq.com`'s IPv6 address refused port 1883 on the lab Wi-Fi, so `MqttRepository` connects to the IPv4 address.
 - **DB as source of truth**: state survives rotation and process death; history comes free.
 - **Target swatch**: firmware publishes `target_L/a/b` and `target_set` since 2026-10-29. The app draws the firmware target when `target_set` is true, else the manual target from Settings, else no target half.

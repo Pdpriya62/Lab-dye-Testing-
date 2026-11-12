@@ -27,6 +27,7 @@ All checks live in `ReadingParser`. An invalid message is dropped and counted; i
 - **Rate limit**: process at most 10 messages/s and drop the rest, so a flooding publisher cannot bloat the DB.
 - **Rig replies** (`.../ack`, `RigCommands.cleanReply`): max 128 bytes, printable ASCII only, otherwise dropped. Shown as plain text.
 - **Outgoing commands** (`RigCommands`): built only from validated fields, same limits as the firmware (text `[A-Za-z0-9 _.-]{1,24}`, L 0–100, a/b −128 to 128, bath 0–130 °C, conc 0–100 %). The topic field rejects `+` and `#`.
+- **Camera results** (`.../cam`, `CamParser`): max 2048 bytes, strict decode, Lab and ΔE ranges, RGB 0–255, grid 2–4 with exactly grid² cells of 4 numbers or null, `roi`/`white` from fixed word lists, target and sensor Lab all-three-or-none, sample ID whitelisted. Rejected messages are counted with the reading drops.
 
 ## 2. Backend API validation
 v1 has no backend, so there is no API to validate. The MQTT broker is the only server:
