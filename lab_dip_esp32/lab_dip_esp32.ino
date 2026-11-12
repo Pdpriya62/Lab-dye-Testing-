@@ -45,14 +45,15 @@ const char* MQTT_STATUS_TOPIC = "rvu/team11/labdip/status"; // retained "online"
 const unsigned long SAMPLE_INTERVAL_MS = 3000;       // 2-5 s as per methodology
 const float BATH_TOL = 2.0;                          // +/- C alert window
 // Per-channel calibration gains (fill in after Priya's calibration against reference swatches)
-float CAL_R = 1.0, CAL_G = 1.0, CAL_B = 1.0;
+// 2026-11-12: white paper read R130 G82 B48 at GAIN_1X; gains make it neutral grey (130,130,130), red kept at 1.0 to limit clipping
+float CAL_R = 1.0, CAL_G = 1.585, CAL_B = 2.708;
 // -----------------------------------
 
 #define ONE_WIRE_PIN 4
 #define OLED_W 128
 #define OLED_H 64
 
-Adafruit_TCS34725 tcs(TCS34725_INTEGRATIONTIME_154MS, TCS34725_GAIN_4X);
+Adafruit_TCS34725 tcs(TCS34725_INTEGRATIONTIME_154MS, TCS34725_GAIN_1X);   // 4X saturated on white paper with the LED on
 #define DHT_PIN 27
 #define DHT_TYPE DHT11
 DHT dht(DHT_PIN, DHT_TYPE);
@@ -92,17 +93,29 @@ float deltaE76(float L1, float a1, float b1, float L2, float a2, float b2) {
 }
 
 // ---------- Sensors ----------
+float median3(float x, float y, float z) { return max(min(x, y), min(max(x, y), z)); }
+
 void readAll() {
-  uint16_t r = 0, g = 0, b = 0, c = 0;
   if (!tcsFound) tcsFound = tcs.begin();   // sensor plugged in after boot
-  if (tcsFound) tcs.getRawData(&r, &g, &b, &c);
+  // Median of 3 reads per channel: one bumped or flickering read no longer moves deltaE (~0.5 s total)
+  float ch[3][3];
+  int n = 0;
+  for (int i = 0; tcsFound && i < 3; i++) {
+    uint16_t r = 0, g = 0, b = 0, c = 0;
+    tcs.getRawData(&r, &g, &b, &c);
+    if (c == 0) continue;   // dark or failed read
+    // normalise by clear channel -> 0..255
+    ch[n][0] = constrain((float)r / c * 255.0 * CAL_R, 0, 255);
+    ch[n][1] = constrain((float)g / c * 255.0 * CAL_G, 0, 255);
+    ch[n][2] = constrain((float)b / c * 255.0 * CAL_B, 0, 255);
+    n++;
+  }
   // A missing or unplugged sensor reads all zeros; publishing that would show a fake black sample
-  colourOk = tcsFound && c > 0;
+  colourOk = tcsFound && n == 3;
   if (!colourOk) { tcsFound = false; return; }
-  float R, G, B;   // normalise by clear channel -> 0..255
-  R = constrain((float)r / c * 255.0 * CAL_R, 0, 255);
-  G = constrain((float)g / c * 255.0 * CAL_G, 0, 255);
-  B = constrain((float)b / c * 255.0 * CAL_B, 0, 255);
+  float R = median3(ch[0][0], ch[1][0], ch[2][0]);
+  float G = median3(ch[0][1], ch[1][1], ch[2][1]);
+  float B = median3(ch[0][2], ch[1][2], ch[2][2]);
   cur.r = R; cur.g = G; cur.b = B;
   rgb2lab(R, G, B, cur.L, cur.a, cur.bb);
   cur.dE = deltaE76(cur.L, cur.a, cur.bb, targetL, targetA, targetB);
@@ -133,11 +146,35 @@ void showOLED() {
 
 // ---------- Network ----------
 void connectWiFi() {
-  if (WiFi.status() == WL_CONNECTED) return;
-  WiFi.mode(WIFI_STA); WiFi.begin(WIFI_SSID, WIFI_PASS);
+  static bool started = false, timeSet = false;
+  static unsigned long lastTry = 0;
+  if (WiFi.status() == WL_CONNECTED) {
+    if (!timeSet) {
+      Serial.print("WiFi ok, IP "); Serial.println(WiFi.localIP());
+      configTime(19800, 0, "pool.ntp.org");  // IST = UTC+5:30
+      timeSet = true;
+    }
+    return;
+  }
+  if (started && millis() - lastTry < 15000) return;   // let the running attempt finish
+  lastTry = millis();
+  if (!started) {
+    // begin() only once: calling it again mid-attempt gives "sta is connecting, cannot set config"
+    WiFi.mode(WIFI_STA);
+    int n = WiFi.scanNetworks();   // scan before begin(), a scan during a connect attempt also fails
+    Serial.printf("Networks seen (%d):\n", n);
+    for (int i = 0; i < n; i++) Serial.printf("  '%s' ch%d %ddBm\n", WiFi.SSID(i).c_str(), WiFi.channel(i), WiFi.RSSI(i));
+    WiFi.setAutoReconnect(true);
+    WiFi.begin(WIFI_SSID, WIFI_PASS);
+    started = true;
+  } else {
+    // 1 = SSID not visible (wrong name or 5 GHz), 4 = connect failed (usually wrong password), 6 = disconnected
+    // setAutoReconnect retries on its own; calling reconnect() here gives "sta is connecting, return error"
+    Serial.printf("WiFi not connected, status %d, still trying\n", WiFi.status());
+    return;
+  }
   unsigned long t0 = millis();
   while (WiFi.status() != WL_CONNECTED && millis() - t0 < 10000) delay(250);
-  if (WiFi.status() == WL_CONNECTED) configTime(19800, 0, "pool.ntp.org");  // IST = UTC+5:30
 }
 void connectMQTT() {
   if (mqtt.connected() || WiFi.status() != WL_CONNECTED) return;
@@ -269,7 +306,7 @@ void setup() {
 
 void loop() {
   handleSerial();
-  if (WiFi.status() != WL_CONNECTED) connectWiFi();   // auto-reconnect
+  connectWiFi();   // reconnects when down; once connected it starts NTP (returns at once after that)
   connectMQTT();
   mqtt.loop();
   if (millis() - lastSample >= SAMPLE_INTERVAL_MS) {
