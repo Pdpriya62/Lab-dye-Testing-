@@ -18,6 +18,21 @@ Use the phone hotspot, not classroom Wi-Fi. Classroom Wi-Fi often blocks MQTT or
 
 **Arduino IDE:** you do not need it during the demo. Both boards are already flashed and start on their own when powered. Open it only as a backup: the Serial Monitor (COM9 for the ESP32, 115200 baud) if the network fails, or COM10 to read the camera's IP if it changes.
 
+### If you change the hotspot
+
+**Easiest:** give the new hotspot the same name and password as the one in `lab_dip_esp32/secrets.h` (phone settings: Hotspot > Hotspot name / Password, band 2.4 GHz). Both boards then connect on their own and nothing else changes.
+
+If the name or password is different, reflash both boards the day before the demo, with both plugged into the laptop:
+
+1. **Main ESP32 (COM9):** put the new `WIFI_SSID` and `WIFI_PASS` in `lab_dip_esp32/secrets.h`, then upload `lab_dip_esp32/lab_dip_esp32.ino` (board "ESP32 Dev Module").
+2. **ESP32-CAM (COM10):** make a local copy of `camera/esp32cam_capture.ino`, put the new name and password in the copy, and upload it (board "AI Thinker ESP32-CAM"). Do not commit that copy.
+3. Connect the laptop and the phone to the new hotspot.
+4. **Find the camera's new IP.** It almost always changes. Read it in the Serial Monitor on COM10 (`Connected. IP: ...`), or try `labdip-cam.local`. Use the new IP in every `--host` command below.
+5. Take a new white photo with the new `--host` (section 4, step 4).
+6. Check: the OLED shows `MQTT ok`, and `http://<new IP>/` says `Lab-dip camera ready`.
+
+The app, the broker and the MQTT topics do not change.
+
 ## 2. What to bring
 
 **Rig**
