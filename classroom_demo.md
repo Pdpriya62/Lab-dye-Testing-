@@ -96,22 +96,18 @@ The app, the broker and the MQTT topics do not change.
    Note the file name it prints, for example `images\WHITE_20261113_002053.jpg`. A good white photo has no RGB value at 255 and no "(mostly glare)". If it shows glare, the bounce card under the flash has slipped.
 5. **TCS check.** With the box still on the white paper, the TCS reads about `130 130 130` on the OLED or in the app. If it reads `255 255 255` or nothing, push its four wires back in.
 6. **Bath set point.** Put the probe tip in the ink glass. Read the bath temperature on the OLED and send it from the app (Rig controls) as the bath set point, rounded, for example `27`. The bath alert is off.
-7. Laptop terminal: start the logger in a new file, so it does not mix with older readings:
-   ```
-   python logger.py --out demo_trials.csv
-   ```
-8. Open the app on the Live screen. The badge shows Online.
+7. Double-click **`start_demo.bat`** in the project folder. It opens two windows and runs both parts of the laptop side; leave them open for the whole demo and close them afterwards:
+   - **LabDip logger:** `python logger.py --out demo_trials.csv`, saves every rig reading.
+   - **LabDip camera:** `python camera/cam_capture.py --led --mqtt --every 10 --flat latest`, the camera in auto mode.
+8. The camera window photographs the swatch every 10 s and sends the result to the app's camera card. It uses the newest white photo and finds the camera at `labdip-cam.local`, so no IP or file name is needed. While the rig is paused it takes no photos.
+9. Open the app (version 2 or later) on the Live screen. The badge shows Online and the camera card appears within about 10 s.
 
 ## 5. During your turn
 
 1. **Introduce the rig (30 s):** the measurement box with the camera and the colour sensor, the bath probe in the ink, the room sensors on the breadboard, and data going live to the app over MQTT.
 2. **Target:** slide the reference swatch under the box. In the app, tap the sliders icon (Rig controls), then **Capture current colour as target**. ΔE drops to about 0.
-3. **Test swatch:** swap in a different shade. ΔE rises, and PASS / FAIL shows on the OLED and in the app.
-4. **Camera:** run
-   ```
-   python camera/cam_capture.py --host 10.83.144.145 --led --flat images\WHITE_<stamp>.jpg
-   ```
-   Show the printed Lab value, then open the `images\S001_..._annotated.jpg` it saved. The grid shows levelness. It is only meaningful when the swatch fills the whole camera view.
+3. **Test swatch:** in Rig controls, tap **Pause**. Swap in a different shade, set the Sample ID to `S2` and tap **Set**, then tap **Resume**. ΔE rises, and PASS / FAIL shows on the OLED and in the app. S1 keeps its own result, because nothing is logged while paused.
+4. **Camera:** the camera card on the Live screen updates by itself every 10 s with the camera's Lab value, ΔE and levelness grid. To show the photo, open the newest `images\S2_..._annotated.jpg`. The grid is only meaningful when the swatch fills the whole camera view.
 5. **Bath alert:** lift the probe out of the ink and hold the steel tip in your fist. Once it is more than 2 °C above the set point, the OLED shows `!! BATH TEMP ALERT !!` and the app shows its alert. Put it back and the alert clears.
 6. **Room sensors:** breathe on the DHT11 for 2–3 s to raise the humidity. Shine the phone torch on the BH1750, then cover it.
 7. **Data:** show `demo_trials.csv` growing in the terminal and the Trend chart in the app.

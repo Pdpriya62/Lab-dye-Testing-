@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Lab-Dip IoT Poster</title>
+<style>
+  @page { size: A3 portrait; margin: 0; }
+  :root {
+    --ink: #1d1830; --soft: #47425c; --line: #ddd8ea;
+    --violet: #5b3fd1; --violet-d: #3b2596; --tint: #f3f0fc; --amber: #b45309; --amber-t: #fff4e5;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: #fff; }
+  body { width: 297mm; height: 420mm; font-family: "Segoe UI", Arial, sans-serif; color: var(--ink);
+         -webkit-print-color-adjust: exact; print-color-adjust: exact; overflow: hidden; }
+  .page { width: 297mm; height: 420mm; padding: 11mm 11mm 11mm; display: flex; flex-direction: column; gap: 5mm; }
+
+  header { background: linear-gradient(120deg, var(--violet-d), var(--violet)); color: #fff; border-radius: 5mm; padding: 8mm 10mm 7mm; }
+  .event { font-size: 10.5pt; letter-spacing: .14em; text-transform: uppercase; opacity: .85; font-weight: 600; }
+  h1 { font-size: 30pt; line-height: 1.12; font-weight: 800; margin: 2.5mm 0 2.5mm; }
+  .sub { font-size: 12pt; opacity: .92; }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5mm; flex: 1; min-height: 0; }
+  .col { display: flex; flex-direction: column; gap: 5mm; min-height: 0; }
+  .grow { flex: 1; }
+  section { border: 0.4mm solid var(--line); border-radius: 4mm; padding: 5mm 5.5mm; background: #fff; }
+  h2 { font-size: 14pt; color: var(--violet-d); font-weight: 800; margin-bottom: 2.5mm; display: flex; align-items: center; gap: 2.5mm; }
+  h2 .n { background: var(--violet); color: #fff; width: 7mm; height: 7mm; border-radius: 50%; font-size: 10pt;
+          display: inline-flex; align-items: center; justify-content: center; flex: none; }
+  p, li { font-size: 10pt; line-height: 1.42; color: var(--soft); }
+  strong { color: var(--ink); }
+  ul { padding-left: 4.5mm; display: grid; gap: 1.4mm; }
+
+  .comp { display: grid; gap: 1.6mm; }
+  .comp div { display: grid; grid-template-columns: 27mm 1fr; gap: 2mm; font-size: 9.4pt; line-height: 1.35; color: var(--soft);
+              padding-bottom: 1.6mm; border-bottom: 0.3mm solid var(--line); }
+  .comp div:last-child { border-bottom: 0; padding-bottom: 0; }
+  .comp b { color: var(--ink); }
+  .sub-h { font-size: 9pt; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--violet); margin: 2.5mm 0 1.5mm; }
+
+  .flow { display: grid; grid-template-columns: 1fr; gap: 1.4mm; margin-bottom: 3mm; }
+  .row3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.6mm; }
+  .node { background: var(--tint); border: 0.4mm solid #cfc5f3; border-radius: 2.5mm; padding: 2mm 1.6mm; text-align: center;
+          font-size: 8.6pt; line-height: 1.28; color: var(--ink); }
+  .node b { display: block; color: var(--violet-d); font-size: 9.4pt; }
+  .arrow { text-align: center; color: var(--violet); font-size: 8.5pt; font-weight: 700; letter-spacing: .05em; }
+  .steps { counter-reset: s; list-style: none; padding: 0; }
+  .steps li { counter-increment: s; position: relative; padding-left: 7mm; }
+  .steps li::before { content: counter(s); position: absolute; left: 0; top: .4mm; width: 5mm; height: 5mm; border-radius: 50%;
+                      background: var(--violet); color: #fff; font-size: 8pt; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  svg { width: 100%; height: auto; display: block; }
+
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.8mm; margin: 2mm 0 2.5mm; }
+  .stat { background: var(--tint); border-radius: 2.5mm; padding: 2.2mm 1mm; text-align: center; }
+  .stat .v { font-size: 16pt; font-weight: 800; color: var(--violet-d); line-height: 1.1; }
+  .stat .k { font-size: 7.8pt; color: var(--soft); line-height: 1.25; margin-top: .6mm; }
+  .tag { display: inline-block; font-size: 7.6pt; font-weight: 700; color: var(--amber); background: var(--amber-t);
+         border-radius: 2mm; padding: .5mm 1.8mm; letter-spacing: .03em; }
+  .bars { display: grid; gap: 1.3mm; margin: 1mm 0 2.5mm; }
+  .bar { display: grid; grid-template-columns: 30mm 1fr 9mm; align-items: center; gap: 2mm; font-size: 8.8pt; color: var(--soft); }
+  .bar i { display: block; height: 3.2mm; background: var(--violet); border-radius: 1mm; }
+  .bar span:last-child { text-align: right; color: var(--ink); font-weight: 700; }
+  .real { background: var(--tint); border-left: 1.3mm solid var(--violet); border-radius: 2mm; padding: 2.5mm 3.5mm; }
+  .real p + p { margin-top: 1.4mm; }
+  .note { font-size: 8.4pt; color: var(--soft); margin-top: 2mm; }
+
+  .team { background: var(--ink); color: #fff; border-radius: 4mm; padding: 5mm 5.5mm; border: 0; }
+  .team h3 { font-size: 9.5pt; letter-spacing: .14em; text-transform: uppercase; color: #c9bdf7; margin-bottom: 2mm; }
+  .team ul { list-style: none; padding: 0; gap: .8mm; }
+  .team li { color: #fff; font-size: 10.5pt; font-weight: 600; line-height: 1.35; }
+  .guide { border-top: 0.3mm solid #4a4560; margin-top: 2.5mm; padding-top: 2.2mm; font-size: 10pt; font-weight: 600; }
+  .guide span { color: #c9bdf7; font-size: 8.5pt; letter-spacing: .1em; text-transform: uppercase; display: block; font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="event">IoT Day · RV University</div>
+    <h1>A Low-Cost Multi-Sensor IoT Rig for<br>Process-Aware Lab-Dip Shade Assessment</h1>
+    <div class="sub">Team 11 · School of Computer Science and Engineering, RV University, Bengaluru</div>
+  </header>
+
+  <div class="grid">
+    <!-- column 1 -->
+    <div class="col">
+      <section>
+        <h2><span class="n">1</span>Aim</h2>
+        <p>To build a <strong>low-cost IoT rig</strong> that records every colour reading of a textile lab dip
+        <strong>together with the dye-bath and room conditions</strong> that produced it, tagged with the sample ID,
+        so that a failed dip can be <strong>traced to a likely cause</strong> instead of guessed at.</p>
+      </section>
+
+      <section>
+        <h2><span class="n">2</span>Problem Statement</h2>
+        <ul>
+          <li>A <strong>lab dip</strong> is a small swatch dyed to the buyer's shade before bulk dyeing.</li>
+          <li>When a dip is rejected, the recipe is blamed, yet <strong>bath temperature</strong>, <strong>lighting</strong>
+              and <strong>humidity</strong> also shift the shade.</li>
+          <li>Labs rarely record these beside the colour reading, so a rejected dip has <strong>no cause attached</strong>.
+              Each extra round wastes dye, water and a day.</li>
+          <li>Spectrophotometers are costly and do not log the process.</li>
+        </ul>
+      </section>
+
+      <section class="grow">
+        <h2><span class="n">3</span>Components Used</h2>
+        <div class="sub-h">Hardware</div>
+        <div class="comp">
+          <div><b>ESP32</b>reads every sensor each 3 s, colour → CIE Lab, ΔE, MQTT</div>
+          <div><b>TCS34725</b>fabric colour sensor with its own LED (I²C)</div>
+          <div><b>ESP32-CAM</b>swatch photo for colour and levelness, flash LED</div>
+          <div><b>DS18B20</b>waterproof dye-bath temperature probe</div>
+          <div><b>DHT11</b>room temperature and humidity</div>
+          <div><b>BH1750</b>ambient light level (lux)</div>
+          <div><b>SSD1306 OLED</b>live readings and bath alert on the rig</div>
+          <div><b>Measurement box</b>21 × 16 × 8.5 cm, white-lined, light-sealed</div>
+        </div>
+        <div class="sub-h">Software</div>
+        <div class="comp">
+          <div><b>MQTT broker</b>one topic each for readings, commands, camera results</div>
+          <div><b>Android app</b>LabDip Monitor (Kotlin, Compose): live ΔE, camera card, alerts, trends, rig controls</div>
+          <div><b>Python</b>logger, live comparison, OpenCV camera analysis, statistics</div>
+        </div>
+      </section>
+    </div>
+
+    <!-- column 2 -->
+    <div class="col">
+      <section>
+        <h2><span class="n">4</span>Working Principle</h2>
+        <div class="flow">
+          <div class="row3">
+            <div class="node"><b>Sense</b>colour, bath, room, light</div>
+            <div class="node"><b>ESP32</b>Lab, ΔE, bath alert</div>
+            <div class="node"><b>MQTT</b>JSON every 3 s</div>
+          </div>
+          <div class="arrow">↓ subscribed by ↓</div>
+          <div class="row3">
+            <div class="node"><b>App</b>ΔE, PASS / FAIL, commands</div>
+            <div class="node"><b>Laptop</b>log, compare, analyse</div>
+            <div class="node"><b>ESP32-CAM</b>photo → Lab, grid</div>
+          </div>
+        </div>
+        <ol class="steps">
+          <li><strong>Colour:</strong> TCS34725 counts ÷ clear channel, scaled to 0–255, corrected by calibration gains, then sRGB → XYZ (D65) → CIE L*a*b*.</li>
+          <li><strong>Target:</strong> the reference swatch is captured from the app. Every later swatch gets ΔE and PASS / FAIL against it.</li>
+          <li><strong>Process:</strong> bath temperature (alert beyond ±2 °C of set point), room temperature, humidity and light go in the same record.</li>
+          <li><strong>Camera:</strong> each photo is corrected pixel by pixel with a white-paper photo, the fabric patch is found automatically and a 3 × 3 grid checks dyeing levelness. Results show on the app's camera card.</li>
+          <li><strong>Analysis:</strong> correlation, OLS with ANOVA and cross-validated regression rank the most likely cause of a colour deviation.</li>
+          <li><strong>Safety:</strong> every command is range-checked. A missing sensor sends nothing, never a fake value.</li>
+        </ol>
+      </section>
+
+      <section class="grow">
+        <h2><span class="n">5</span>Measurement Box &amp; Calibration</h2>
+        <svg viewBox="0 0 300 150" role="img" aria-label="Side view of the measurement box with camera chamber and TCS box">
+          <rect x="10" y="20" width="280" height="100" rx="4" fill="#f3f0fc" stroke="#3b2596" stroke-width="2"/>
+          <line x1="210" y1="20" x2="210" y2="120" stroke="#3b2596" stroke-width="1.5" stroke-dasharray="4 3"/>
+          <rect x="85" y="20" width="40" height="16" rx="2" fill="#5b3fd1"/>
+          <text x="105" y="31" font-size="9" fill="#fff" text-anchor="middle" font-family="Segoe UI">CAM</text>
+          <rect x="92" y="44" width="26" height="4" fill="#fff" stroke="#3b2596"/>
+          <text x="128" y="49" font-size="8" fill="#47425c" font-family="Segoe UI">bounce card</text>
+          <path d="M60 116 L105 50 L150 116" fill="none" stroke="#5b3fd1" stroke-width="1" stroke-dasharray="3 2"/>
+          <rect x="225" y="20" width="50" height="70" fill="#1d1830"/>
+          <text x="250" y="52" font-size="9" fill="#fff" text-anchor="middle" font-family="Segoe UI">TCS</text>
+          <text x="250" y="64" font-size="8" fill="#c9bdf7" text-anchor="middle" font-family="Segoe UI">+ LED</text>
+          <rect x="4" y="120" width="292" height="9" fill="#e9c84a"/>
+          <text x="150" y="142" font-size="9" fill="#47425c" text-anchor="middle" font-family="Segoe UI">fabric swatch (open side down)</text>
+          <text x="110" y="13" font-size="9" fill="#3b2596" text-anchor="middle" font-family="Segoe UI">~15 cm camera chamber</text>
+          <text x="250" y="13" font-size="9" fill="#3b2596" text-anchor="middle" font-family="Segoe UI">~6 cm</text>
+          <text x="297" y="70" font-size="9" fill="#3b2596" text-anchor="middle" font-family="Segoe UI" transform="rotate(-90 297 70)">8.5 cm</text>
+        </svg>
+        <ul style="margin-top:2.5mm">
+          <li>The camera's own flash bounces off the white ceiling: soft light, no glare, no extra LEDs.</li>
+          <li>The TCS sits in its own opaque box a few mm above the fabric.</li>
+          <li>A foam rim seals out room light. The room sensors stay outside on the breadboard.</li>
+        </ul>
+        <div class="sub-h" style="margin-top:4mm">Calibrated on plain white paper</div>
+        <div class="comp">
+          <div><b>TCS34725</b>gain 1×, 154 ms. Per-channel gains R 1.0, G 1.585, B 2.708 turn white paper from R130 G82 B48 into neutral grey.</div>
+          <div><b>ESP32-CAM</b>white balance and exposure locked (exposure 150, no clipping). A white-paper photo corrects every later photo pixel by pixel.</div>
+          <div><b>Re-check</b>take a new white photo whenever the box, camera or lighting changes.</div>
+        </div>
+      </section>
+    </div>
+
+    <!-- column 3 -->
+    <div class="col">
+      <section>
+        <h2><span class="n">6</span>Live Demo</h2>
+        <svg viewBox="0 0 220 72" role="img" aria-label="Demo layout on a cardboard base: box, breadboard, ink glass">
+          <rect x="1" y="1" width="218" height="70" rx="5" fill="#f6efe2" stroke="#c9b48f" stroke-width="1"/>
+          <rect x="8" y="9" width="58" height="42" rx="3" fill="#f3f0fc" stroke="#3b2596" stroke-width="1.3"/>
+          <text x="37" y="28" font-size="9" fill="#3b2596" text-anchor="middle" font-family="Segoe UI" font-weight="700">Box</text>
+          <text x="37" y="40" font-size="7" fill="#47425c" text-anchor="middle" font-family="Segoe UI">fabric below</text>
+          <line x1="66" y1="30" x2="78" y2="30" stroke="#47425c" stroke-width="1" stroke-dasharray="3 2"/>
+          <rect x="78" y="9" width="72" height="42" rx="3" fill="#fff" stroke="#47425c" stroke-width="1"/>
+          <text x="114" y="28" font-size="9" fill="#1d1830" text-anchor="middle" font-family="Segoe UI" font-weight="700">Breadboard</text>
+          <text x="114" y="40" font-size="7" fill="#47425c" text-anchor="middle" font-family="Segoe UI">ESP32 · sensors · OLED</text>
+          <line x1="150" y1="30" x2="164" y2="30" stroke="#47425c" stroke-width="1"/>
+          <circle cx="188" cy="30" r="22" fill="#cfe0f7" stroke="#2c4f8a" stroke-width="1"/>
+          <ellipse cx="188" cy="34" rx="16" ry="14" fill="#2c4f8a" opacity=".6"/>
+          <text x="188" y="29" font-size="8" fill="#fff" text-anchor="middle" font-family="Segoe UI" font-weight="700">ink bath</text>
+          <text x="188" y="39" font-size="6.5" fill="#fff" text-anchor="middle" font-family="Segoe UI">probe</text>
+          <text x="110" y="64" font-size="7" fill="#7a6a4c" text-anchor="middle" font-family="Segoe UI">one cardboard base · ink kept away from the electronics</text>
+        </svg>
+        <p style="margin:2.5mm 0 1.5mm">A glass of water with ink stands in for the dye bath; dyed fabric swatches go under the box.</p>
+        <ol class="steps">
+          <li>Reference fabric under the box, tap <strong>Capture</strong> in the app: ΔE ≈ 0.</li>
+          <li>Swap in another shade: ΔE rises, PASS / FAIL updates on OLED and phone.</li>
+          <li>Camera photo: Lab value and levelness grid appear on the app.</li>
+          <li>Warm the probe by hand out of the ink: bath alert beyond ±2 °C.</li>
+        </ol>
+      </section>
+
+      <section class="grow">
+        <h2><span class="n">7</span>Results</h2>
+        <div class="real">
+          <p><strong>Real rig, white-paper calibration</strong></p>
+          <p>White paper on the TCS34725 now reads neutral (a −0.14, b 0.22). The camera's green cast is removed by the white reference:
+          a yellow swatch reads <strong>L 78.4, a −9.7, b 48.3</strong>. Both sensors agree on its hue: <strong>98° vs 101°</strong>.</p>
+        </div>
+        <p style="margin-top:3mm"><span class="tag">ANALYSIS ON SYNTHETIC DATA</span>&nbsp; 60 simulated lab dips, 5,464 rows</p>
+        <div class="stats">
+          <div class="stat"><div class="v">0.806</div><div class="k">OLS R²</div></div>
+          <div class="stat"><div class="v">0.727</div><div class="k">Linear reg. CV R²</div></div>
+          <div class="stat"><div class="v">0.529</div><div class="k">Random forest CV R²</div></div>
+        </div>
+        <div class="bars" aria-label="Permutation importance">
+          <div class="bar"><span>Lighting deviation</span><i style="width:100%"></i><span>0.67</span></div>
+          <div class="bar"><span>Bath deviation</span><i style="width:34%"></i><span>0.23</span></div>
+          <div class="bar"><span>Bath under-temp.</span><i style="width:25%"></i><span>0.17</span></div>
+          <div class="bar"><span>Humidity</span><i style="width:9%"></i><span>0.06</span></div>
+        </div>
+        <p>Which condition drives ΔE (permutation importance). The simpler linear model beat the random forest. This checks the method, not real dyeing.</p>
+        <p class="note">Rig ΔE is CIE76; camera and analysis use CIEDE2000. The two are not compared directly.</p>
+      </section>
+
+      <section class="team">
+        <h3>Team 11</h3>
+        <ul>
+          <li>Priyadarshini Prasad</li>
+          <li>Niharika K P</li>
+          <li>Nidhi Santosh Nayak</li>
+          <li>Nischita M</li>
+          <li>Ganavi J</li>
+        </ul>
+        <div class="guide"><span>Guide</span>Aishwarya Singh Gautam<br>Assistant Professor</div>
+      </section>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
