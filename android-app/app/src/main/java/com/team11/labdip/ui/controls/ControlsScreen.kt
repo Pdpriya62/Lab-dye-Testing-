@@ -58,6 +58,7 @@ fun ControlsRoute(onBack: () -> Unit, vm: ControlsViewModel = viewModel(factory 
         state, onBack, vm::edit,
         onCapture = vm::capture, onSetId = vm::setSampleId, onSetTarget = vm::setTarget,
         onSetBath = vm::setBath, onSetDetails = vm::setDetails,
+        onPause = vm::pause, onResume = vm::resume,
     )
 }
 
@@ -71,6 +72,8 @@ fun ControlsScreen(
     onSetTarget: () -> Unit,
     onSetBath: () -> Unit,
     onSetDetails: () -> Unit,
+    onPause: () -> Unit,
+    onResume: () -> Unit,
 ) {
     val f = state.form
     val on = state.canSend
@@ -107,6 +110,15 @@ fun ControlsScreen(
                 PillButton("Set target", onSetTarget, Modifier.fillMaxWidth(), enabled = on)
             }
 
+            Section("Swap fabric") {
+                Text("Pause, swap the fabric, set the new sample ID below, then resume. Nothing is logged while paused.", style = LabType.small, color = InkSoft)
+                Row {
+                    PillButton("Pause", onPause, Modifier.weight(1f), enabled = on)
+                    Spacer(Modifier.width(8.dp))
+                    PillButton("Resume", onResume, Modifier.weight(1f), enabled = on)
+                }
+            }
+
             Section("Sample") {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     LabField("Sample ID", f.sampleId, null, modifier = Modifier.weight(1f)) { v -> onEdit { it.copy(sampleId = v) } }
@@ -119,7 +131,7 @@ fun ControlsScreen(
                     Spacer(Modifier.width(8.dp))
                     LabField("Conc. % owf", f.conc, null, KeyboardType.Decimal, Modifier.weight(1f)) { v -> onEdit { it.copy(conc = v) } }
                 }
-                PillButton("Set fabric and dye", onSetDetails, Modifier.fillMaxWidth(), enabled = on)
+                PillButton("Set sample, fabric and dye", onSetDetails, Modifier.fillMaxWidth(), enabled = on)
             }
 
             Section("Dye bath") {
@@ -188,6 +200,6 @@ private fun ControlsPreview() = LabDipTheme {
                 LogLine(0, LogKind.Problem, "No reply from the rig. Is it powered and on Wi-Fi?"),
             ),
         ),
-        {}, {}, {}, {}, {}, {}, {},
+        {}, {}, {}, {}, {}, {}, {}, {}, {},
     )
 }

@@ -100,6 +100,8 @@ class ControlsViewModel(
     fun edit(change: (ControlsForm) -> ControlsForm) = local.update { it.copy(form = change(it.form), error = null) }
 
     fun capture() = send(listOf(RigCommands.capture()))
+    fun pause() = send(listOf(RigCommands.pause()))
+    fun resume() = send(listOf(RigCommands.resume()))
     fun setSampleId() = send(listOf(RigCommands.id(form().sampleId)))
     fun setTarget() = form().let { send(listOf(RigCommands.target(it.targetL, it.targetA, it.targetB))) }
     fun setBath() = send(listOf(RigCommands.bath(form().bath)))
@@ -107,11 +109,13 @@ class ControlsViewModel(
     fun setDetails() {
         val f = form()
         val cmds = listOfNotNull(
+            // ID first: users fill in the whole Sample card and press this one button
+            f.sampleId.takeIf { it.isNotBlank() }?.let(RigCommands::id),
             f.fabric.takeIf { it.isNotBlank() }?.let(RigCommands::fabric),
             f.dye.takeIf { it.isNotBlank() }?.let(RigCommands::dye),
             f.conc.takeIf { it.isNotBlank() }?.let(RigCommands::conc),
         )
-        if (cmds.isEmpty()) local.update { it.copy(error = "Enter a fabric, dye or concentration") } else send(cmds)
+        if (cmds.isEmpty()) local.update { it.copy(error = "Enter a sample ID, fabric, dye or concentration") } else send(cmds)
     }
 
     private fun form() = local.value.form

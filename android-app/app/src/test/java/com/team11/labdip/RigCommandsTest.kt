@@ -22,6 +22,8 @@ class RigCommandsTest {
         assertEquals("CONC 2.00", RigCommands.conc("2").getOrThrow())
         assertEquals("DYE reactive red", RigCommands.dye("reactive red").getOrThrow())
         assertEquals("CAPTURE", RigCommands.capture().getOrThrow())
+        assertEquals("PAUSE", RigCommands.pause().getOrThrow())
+        assertEquals("RESUME", RigCommands.resume().getOrThrow())
     }
 
     @Test fun rejectsOutOfRangeAndUnsafeInput() {

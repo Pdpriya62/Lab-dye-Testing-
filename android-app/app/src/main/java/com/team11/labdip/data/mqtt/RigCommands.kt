@@ -24,6 +24,8 @@ object RigCommands {
     fun fabric(v: String) = textCommand("FABRIC", v, "Fabric")
     fun dye(v: String) = textCommand("DYE", v, "Dye")
     fun capture(): Result<String> = Result.success("CAPTURE")
+    fun pause(): Result<String> = Result.success("PAUSE")
+    fun resume(): Result<String> = Result.success("RESUME")
 
     fun target(l: String, a: String, b: String): Result<String> = runCatching {
         "TARGET ${fmt(num(l, 0.0, 100.0, "L"))} ${fmt(num(a, -128.0, 128.0, "a"))} ${fmt(num(b, -128.0, 128.0, "b"))}"
