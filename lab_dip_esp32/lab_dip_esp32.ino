@@ -19,6 +19,7 @@
  *   TARGET 52.3 10.1 -4.2   set target Lab values manually
  *   BATH 60            set recipe bath temperature (C); alert if outside +/- BATH_TOL
  *   FABRIC cotton / DYE reactive_red / CONC 2.0   optional metadata added to every JSON
+ *   PAUSE / RESUME     stop / restart publishing while the fabric is swapped (PAUSE, swap, ID S002, RESUME)
  */
 #include <Wire.h>
 #include <WiFi.h>
@@ -73,6 +74,7 @@ bool haveTarget = false;   // false until CAPTURE or TARGET; deltaE is against t
 bool tcsFound = false;
 bool colourOk = false;     // true only when the last TCS34725 read returned light; no colour = nothing published
 unsigned long lastSample = 0;
+bool paused = false;       // PAUSE: keep reading and showing, but publish nothing, so a fabric swap is not logged under the old sample ID
 
 struct Reading { float r, g, b, L, a, bb, dE, ambT, hum, press, lux, bath; bool alert; };
 Reading cur;
@@ -140,7 +142,7 @@ void showOLED() {
   oled.setCursor(0, 22); oled.printf("Bath: %.1f C", cur.bath);
   oled.setCursor(0, 33); oled.printf("Amb: %.1fC %.0f%%", cur.ambT, cur.hum);
   oled.setCursor(0, 44); oled.printf("Light: %.0f lx", cur.lux);
-  oled.setCursor(0, 55); oled.print(cur.alert ? "!! BATH TEMP ALERT !!" : (mqtt.connected() ? "MQTT ok" : "MQTT offline"));
+  oled.setCursor(0, 55); oled.print(cur.alert ? "!! BATH TEMP ALERT !!" : paused ? "PAUSED: swap fabric" : (mqtt.connected() ? "MQTT ok" : "MQTT offline"));
   oled.display();
 }
 
@@ -261,6 +263,8 @@ String runCommand(String line) {
     if (!okNum(arg, 0, 100, v)) return "ERR CONC needs 0-100 %";
     conc = v; char buf[24]; snprintf(buf, sizeof(buf), "OK conc=%.2f", conc); return buf;
   }
+  if (cmd == "PAUSE")  { paused = true;  return "OK paused, sample=" + sampleId; }
+  if (cmd == "RESUME") { paused = false; return "OK resumed, sample=" + sampleId; }
   return "ERR unknown command";
 }
 
@@ -312,7 +316,8 @@ void loop() {
   if (millis() - lastSample >= SAMPLE_INTERVAL_MS) {
     lastSample = millis();
     readAll(); showOLED();
-    if (colourOk) publishReading();
+    if (paused) Serial.println("Paused; nothing published (send RESUME)");
+    else if (colourOk) publishReading();
     else Serial.println("No colour reading (TCS34725 missing or dark); nothing published");
   }
 }
