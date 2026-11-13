@@ -21,8 +21,13 @@ What it does with each photo:
   and the sensor's Lab is compared with the camera's. Publishes the result as JSON on the sibling topic
   `.../cam` (rvu/team11/labdip/cam by default) for the LabDip Monitor app. Not retained.
 --loop: press Enter for the next capture, q then Enter to quit. A failed capture does not stop the loop.
+--every N (needs --mqtt): hands-free demo mode. Captures and publishes every N seconds while the rig is
+  publishing; skips while the rig is paused (PAUSE) or offline, so a fabric swap is never logged under the
+  old sample ID. Ctrl+C to stop.
+  python camera/cam_capture.py --led --mqtt --every 10 --flat latest
 
 White reference (pick one):
+  --flat latest                the newest images/WHITE_*.jpg.
   --flat images/WHITE_....jpg  best. Put plain white paper where the patch goes, run once with --sample WHITE --led,
                                then pass that saved photo. Corrects colour cast AND uneven LED light, so levelness
                                measures the dyeing, not the lighting. Retake it if the box, LED or camera moves.
@@ -68,7 +73,11 @@ def parse_args(argv=None):
     ap.add_argument("--port", type=int, default=1883)
     ap.add_argument("--topic", default="rvu/team11/labdip/data", help="rig data topic; results go to .../cam")
     ap.add_argument("--loop", action="store_true", help="capture again on every Enter, q to quit")
+    ap.add_argument("--every", type=float, metavar="SECONDS",
+                    help="with --mqtt: capture automatically every N s while the rig is publishing (not when paused)")
     a = ap.parse_args(argv)
+    if a.every is not None and (not a.mqtt or a.every < 3): ap.error("--every needs --mqtt and at least 3 seconds")
+    if a.every is not None and a.loop: ap.error("use --every or --loop, not both")
     if not 0.05 <= a.roi <= 1.0: ap.error("--roi must be between 0.05 and 1")
     if a.white and any(v <= 0 or v > 255 for v in a.white): ap.error("--white values must be 1-255")
     if sum(map(bool, (a.white, a.auto_white, a.flat))) > 1: ap.error("use only one of --white, --auto-white, --flat")
@@ -407,8 +416,37 @@ def capture_once(a, rig=None, flat=None):
     return res
 
 
+def latest_white(out_dir):
+    """Newest WHITE_*.jpg photo in out_dir (annotated copies excluded), or None."""
+    import glob
+    files = [f for f in glob.glob(os.path.join(out_dir, "WHITE_*.jpg")) if not f.endswith("_annotated.jpg")]
+    return max(files, key=os.path.getmtime) if files else None
+
+
+def auto_loop(a, rig, flat):
+    """Capture every a.every s while the rig is publishing; a paused or offline rig sends nothing, so skip."""
+    waiting = False
+    rig.reading(wait=5)                                  # first rig message usually lands within 3 s of connecting
+    while True:
+        with rig.lock: r = rig.latest
+        if r and time.time() - r["at"] <= 7:          # rig sends every 3 s; older means PAUSE or offline
+            waiting = False
+            try:
+                capture_once(a, rig, flat)
+            except Exception as e:                       # camera off, Wi-Fi drop, bad image: report, keep going
+                print(f"capture failed: {e}")
+        elif not waiting:
+            print("rig paused or offline: not capturing (RESUME on the rig to continue)")
+            waiting = True
+        time.sleep(a.every)
+
+
 def main(argv=None):
     a = parse_args(argv)
+    if a.flat == "latest":
+        a.flat = latest_white(a.out_dir)
+        if not a.flat: raise SystemExit(f"--flat latest: no WHITE_*.jpg in {a.out_dir}; take one with --sample WHITE --led")
+        print(f"white reference: {a.flat}")
     try:
         flat = load_flat(a.flat) if a.flat else None
     except RuntimeError as e:
@@ -423,6 +461,9 @@ def main(argv=None):
         except (OSError, RuntimeError) as e:
             raise SystemExit(f"MQTT: {e}")
     try:
+        if a.every:
+            print(f"auto mode: capturing every {a.every:g} s while the rig publishes. Ctrl+C to stop.")
+            auto_loop(a, rig, flat)
         while True:
             try:
                 capture_once(a, rig, flat)
@@ -434,6 +475,8 @@ def main(argv=None):
                 if input("\nEnter = next capture, q = quit: ").strip().lower() == "q": break
             except EOFError:
                 break
+    except KeyboardInterrupt:
+        print("\nstopped")
     finally:
         if rig: rig.close()
 

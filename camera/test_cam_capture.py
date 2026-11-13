@@ -135,9 +135,18 @@ def test_old_log_header_not_mixed():
         assert cc.write_log(old, {k: "" for k in cc.LOG_FIELDS}) == used   # appends to the v2 file next time
 
 
+def test_latest_white_skips_annotated():
+    with tempfile.TemporaryDirectory() as d:
+        assert cc.latest_white(d) is None
+        for i, n in enumerate(["WHITE_1.jpg", "WHITE_2.jpg", "WHITE_2_annotated.jpg", "S001_9.jpg"]):
+            p = os.path.join(d, n); open(p, "w").close(); os.utime(p, (1000 + i, 1000 + i))
+        assert os.path.basename(cc.latest_white(d)) == "WHITE_2.jpg"
+
+
 def test_cli_bad_args():
     for bad in (["--roi", "2"], ["--white", "0", "1", "1"], ["--target", "120", "0", "0"], ["--sample", "a;b"],
-                ["--white", "1", "1", "1", "--auto-white"], ["--topic", "a/#"]):
+                ["--white", "1", "1", "1", "--auto-white"], ["--topic", "a/#"],
+                ["--every", "10"], ["--mqtt", "--every", "1"], ["--mqtt", "--every", "10", "--loop"]):
         try:
             cc.parse_args(bad)
         except SystemExit:
