@@ -420,7 +420,8 @@ def latest_white(out_dir):
     """Newest WHITE_*.jpg photo in out_dir (annotated copies excluded), or None."""
     import glob
     files = [f for f in glob.glob(os.path.join(out_dir, "WHITE_*.jpg")) if not f.endswith("_annotated.jpg")]
-    return max(files, key=os.path.getmtime) if files else None
+    # by the WHITE_YYYYMMDD_HHMMSS name, not file time: a git checkout or copy resets file times
+    return max(files, key=os.path.basename) if files else None
 
 
 def auto_loop(a, rig, flat):

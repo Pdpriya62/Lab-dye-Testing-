@@ -4,3 +4,7 @@ lab_dip_esp32/secrets.h
 # Python bytecode and design-tool state
 __pycache__/
 .impeccable/
+
+# Auto-captured camera photos (start_demo.bat makes two every ~14 s); white references stay tracked
+images/*
+!images/WHITE_*.jpg
